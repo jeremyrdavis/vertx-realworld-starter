@@ -1,7 +1,5 @@
 package io.vertx.conduit.users.models;
 
-import java.sql.Timestamp;
-
 /**
  * username: String,
  email: String,
@@ -83,4 +81,5 @@ public class User {
   public void setSalt(String salt) {
     this.salt = salt;
   }
+
 }
