@@ -55,7 +55,7 @@ public class MainVerticle extends AbstractVerticle {
 
     // marshall our payload into a User object
     //final User user = Json.decodeValue(routingContext.getBodyAsString(), User.class);
-    JsonObject user = routingContext.getBodyAsJson();
+    final JsonObject user = routingContext.getBodyAsJson();
 
     //TODO: save this to the database
 
