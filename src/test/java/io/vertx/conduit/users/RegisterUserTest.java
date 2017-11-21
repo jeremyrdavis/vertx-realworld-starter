@@ -45,8 +45,9 @@ public class RegisterUserTest {
             final User user = Json.decodeValue(body.toString(), User.class);
             tc.assertEquals(user.getUsername(), "username");
             tc.assertEquals(user.getEmail(), "user@domain.com");
+            async.complete();
           });
-          async.complete();
       }).write(json).end();
   }
+
 }
