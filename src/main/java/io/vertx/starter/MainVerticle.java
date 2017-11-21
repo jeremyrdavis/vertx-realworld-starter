@@ -5,6 +5,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -53,7 +54,8 @@ public class MainVerticle extends AbstractVerticle {
   private void registerUser(RoutingContext routingContext) {
 
     // marshall our payload into a User object
-    final User user = Json.decodeValue(routingContext.getBodyAsString(), User.class);
+    //final User user = Json.decodeValue(routingContext.getBodyAsString(), User.class);
+    JsonObject user = routingContext.getBodyAsJson();
 
     //TODO: save this to the database
 
