@@ -32,7 +32,7 @@ public class RegisterUserTest {
   public void testRegisteringAUser(TestContext tc) {
     Async async = tc.async();
 
-    final String json = Json.encodePrettily(new User("username","user@domain.com", "password"));
+    final String json = Json.encodePrettily(new User("username", "user@domain.com", "password"));
     final String length = String.valueOf(json.length());
 
     vertx.createHttpClient().post(8080, "localhost", "/api/users")

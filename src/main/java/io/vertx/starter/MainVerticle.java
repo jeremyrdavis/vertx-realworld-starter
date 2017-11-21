@@ -5,7 +5,6 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -40,7 +39,10 @@ public class MainVerticle extends AbstractVerticle {
 
   private void getCurrentUser(RoutingContext routingContext) {
 
-    User user = new User("username", "user@email.com", "foo");
+    User user = new User();
+    user.setEmail("user@email.com");
+    user.setPassword("password");
+    user.setUsername("username");
     // create and return our response
     routingContext.response()
       .setStatusCode(201)
