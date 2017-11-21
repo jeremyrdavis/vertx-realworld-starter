@@ -6,14 +6,28 @@ import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
 public class MainVerticle extends AbstractVerticle {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
+
+  // for DB access
+  private MongoClient mongoClient;
+
+  // MongoDB Collection key for users
+  public static final String USER_COLLECTION = "users";
+
   @Override
   public void start(Future<Void> future) {
+
+    // Configure the MongoClient inline.  This should be externalized into a config file
+    mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", "users").put("connection_string", "mongodb://localhost:12345"));
 
     // create a router to handle the API
     Router router = Router.router(vertx);
@@ -55,15 +69,17 @@ public class MainVerticle extends AbstractVerticle {
 
     // marshall our payload into a User object
     //final User user = Json.decodeValue(routingContext.getBodyAsString(), User.class);
-    final JsonObject user = routingContext.getBodyAsJson();
+    final User user = new User(routingContext.getBodyAsJson());
 
     //TODO: save this to the database
-
-    // create and return our response
-    routingContext.response()
-      .setStatusCode(201)
-      .putHeader("content-type", "application/json; charset=utf-8")
-      .end(Json.encodePrettily(user));
+    mongoClient.insert(USER_COLLECTION, user.toJson(), r -> {
+      LOGGER.debug(r.result());
+      user.setId(r.result());
+      routingContext.response()
+        .setStatusCode(201)
+        .putHeader("content-type","application/json; charset=utf-8")
+        .end(Json.encodePrettily(user));
+    });
 
   }
 

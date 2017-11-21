@@ -35,6 +35,13 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-web</artifactId>
     </dependency>
+    <!-- MongoDB -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-mongo-client</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <!-- Test Stuff -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -46,11 +53,12 @@
       <artifactId>vertx-unit</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- MongoDB -->
+    <!-- An embedded MongoDB for use in Unit and Integration tests -->
     <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-mongo-client</artifactId>
-      <version>${vertx.version}</version>
+      <groupId>de.flapdoodle.embed</groupId>
+      <artifactId>de.flapdoodle.embed.mongo</artifactId>
+      <version>1.50.0</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -64,6 +72,29 @@
             <source>1.8</source>
             <target>1.8</target>
           </configuration>
+        </plugin>
+        <!-- plugin for starting and stopping the embedded MongoDB -->
+        <plugin>
+          <groupId>com.github.joelittlejohn.embedmongo</groupId>
+          <artifactId>embedmongo-maven-plugin</artifactId>
+          <version>0.2.0</version>
+          <executions>
+            <execution>
+              <id>start</id>
+              <goals>
+                <goal>start</goal>
+              </goals>
+              <configuration>
+                <port>37017</port>
+              </configuration>
+            </execution>
+            <execution>
+              <id>stop</id>
+              <goals>
+                <goal>stop</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </pluginManagement>

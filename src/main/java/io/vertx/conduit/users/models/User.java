@@ -1,5 +1,8 @@
 package io.vertx.conduit.users.models;
 
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
+
 /**
  * username: String,
  email: String,
@@ -9,6 +12,8 @@ package io.vertx.conduit.users.models;
  salt: String
  */
 public class User {
+
+  private String id;
 
   private String username;
 
@@ -23,6 +28,31 @@ public class User {
     this.username = username;
     this.email = email;
     this.password = password;
+  }
+
+  public User(JsonObject jsonObject){
+    this.id = jsonObject.getString("id");
+    this.username = jsonObject.getString("username");
+    this.email = jsonObject.getString("email");
+
+  }
+
+  public JsonObject toJson() {
+    JsonObject json = new JsonObject()
+      .put("username", username)
+      .put("email", email);
+    if (id != null && !id.isEmpty()) {
+      json.put("_id", id);
+    }
+    return json;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
   }
 
   public String getUsername() {
