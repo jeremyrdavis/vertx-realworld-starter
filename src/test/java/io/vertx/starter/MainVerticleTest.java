@@ -1,6 +1,8 @@
 package io.vertx.starter;
 
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -17,6 +19,7 @@ public class MainVerticleTest {
   @Before
   public void setUp(TestContext tc) {
     vertx = Vertx.vertx();
+
     vertx.deployVerticle(MainVerticle.class.getName(), tc.asyncAssertSuccess());
   }
 
