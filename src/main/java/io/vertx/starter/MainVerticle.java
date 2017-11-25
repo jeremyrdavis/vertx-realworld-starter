@@ -29,20 +29,22 @@ public class MainVerticle extends AbstractVerticle {
     // Configure the MongoClient inline.  This should be externalized into a config file
     mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", "users").put("connection_string", "mongodb://localhost:12345"));
 
-    // create a router to handle the API
-    Router router = Router.router(vertx);
+    // create a apiRouter to handle the API
+    Router baseRouter = Router.router(vertx);
+    Router apiRouter = Router.router(vertx);
 
-    router.route("/").handler(routingContext -> {
+    baseRouter.route("/").handler(routingContext -> {
       HttpServerResponse response = routingContext.response();
       response.putHeader("content-type", "text/plain").end("Hello Vert.x!");
     });
 
-    router.route("/api/user*").handler(BodyHandler.create());
-    router.get("/api/user").handler(this::getCurrentUser);
-    router.post("/api/users").handler(this::registerUser);
+    apiRouter.route("/user*").handler(BodyHandler.create());
+    apiRouter.get("/user").handler(this::getCurrentUser);
+    apiRouter.post("/users").handler(this::registerUser);
+    baseRouter.mountSubRouter("/api", apiRouter);
 
     vertx.createHttpServer()
-      .requestHandler(router::accept)
+      .requestHandler(baseRouter::accept)
       .listen(8080, result -> {
         if (result.succeeded()) {
           future.complete();
