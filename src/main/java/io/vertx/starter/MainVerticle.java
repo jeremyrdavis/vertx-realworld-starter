@@ -3,11 +3,13 @@ package io.vertx.starter;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.net.JksOptions;
 import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -43,7 +45,9 @@ public class MainVerticle extends AbstractVerticle {
     apiRouter.post("/users").handler(this::registerUser);
     baseRouter.mountSubRouter("/api", apiRouter);
 
-    vertx.createHttpServer()
+    vertx.createHttpServer(new HttpServerOptions()
+      .setSsl(true)
+      .setKeyStoreOptions(new JksOptions().setPath("server-keystore.jks").setPassword("secret")))
       .requestHandler(baseRouter::accept)
       .listen(8080, result -> {
         if (result.succeeded()) {

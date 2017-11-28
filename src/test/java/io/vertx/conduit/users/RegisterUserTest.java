@@ -11,6 +11,7 @@ import de.flapdoodle.embed.process.runtime.Network;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -78,7 +79,8 @@ public class RegisterUserTest {
     final String json = Json.encodePrettily(new User("username", "user@domain.com", "password"));
     final String length = String.valueOf(json.length());
 
-    vertx.createHttpClient().post(8080, "localhost", "/api/users")
+    vertx.createHttpClient(new HttpClientOptions()
+      .setSsl(true).setTrustAll(true)).post(8080, "localhost", "/api/users")
       .putHeader("content-type", "application/json")
       .putHeader("content-length", length)
       .handler(response -> {
