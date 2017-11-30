@@ -34,7 +34,7 @@ public class RegisterUserTest {
   private static int MONGO_PORT = 12345;
 
   /**
-   * Setup the embedded MongoDB once before any tests are run
+   * Setup the embedded MongoDB once before any tests are run and insert data
    *
    * @throws IOException
    */

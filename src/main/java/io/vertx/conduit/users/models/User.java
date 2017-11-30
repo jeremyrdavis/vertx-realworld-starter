@@ -13,13 +13,13 @@ import io.vertx.core.json.JsonObject;
  */
 public class User {
 
-  private String id;
+  String id;
 
-  private String username;
+  String username;
 
-  private String email;
+  String email;
 
-  private String password;
+  String password;
 
   public User() {
   }

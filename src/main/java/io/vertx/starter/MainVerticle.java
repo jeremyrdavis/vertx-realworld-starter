@@ -23,13 +23,13 @@ public class MainVerticle extends AbstractVerticle {
   private MongoClient mongoClient;
 
   // MongoDB Collection key for users
-  public static final String USER_COLLECTION = "users";
+  public static final String USER_COLLECTION = "conduit_users";
 
   @Override
   public void start(Future<Void> future) {
 
     // Configure the MongoClient inline.  This should be externalized into a config file
-    mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", "users").put("connection_string", "mongodb://localhost:12345"));
+    mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:12345"));
 
     // create a apiRouter to handle the API
     Router baseRouter = Router.router(vertx);
@@ -43,6 +43,7 @@ public class MainVerticle extends AbstractVerticle {
     apiRouter.route("/user*").handler(BodyHandler.create());
     apiRouter.get("/user").handler(this::getCurrentUser);
     apiRouter.post("/users").handler(this::registerUser);
+    apiRouter.post("/users/login").handler(this::loginUser);
     baseRouter.mountSubRouter("/api", apiRouter);
 
     vertx.createHttpServer(new HttpServerOptions()
@@ -56,6 +57,31 @@ public class MainVerticle extends AbstractVerticle {
           future.fail(result.cause());
         }
       });
+  }
+
+  private void loginUser(RoutingContext routingContext) {
+
+    final User user = Json.decodeValue(routingContext.getBodyAsString(), User.class);
+
+    JsonObject query = new JsonObject().put("email", user.getEmail()).put("password", user.getPassword());
+
+    mongoClient.find("users", query, r ->{
+      if (r.succeeded()) {
+        // if there is no result
+        if (r.result().isEmpty()) {
+          System.out.println("Did Not Find User");
+          routingContext.response().setStatusCode(404).end();
+        }else{
+          routingContext.response()
+            .setStatusCode(200)
+            .putHeader("content-type", "application/json; charset=utf-8")
+            .end(Json.encodePrettily(r.result()));
+        }
+      }else{
+        System.out.println("Did Not Find User");
+        routingContext.response().setStatusCode(500);
+      }
+    });
   }
 
   private void getCurrentUser(RoutingContext routingContext) {
