@@ -91,7 +91,7 @@
           <version>0.2.0</version>
           <executions>
             <execution>
-              <id>start</id>
+              <_id>start</_id>
               <goals>
                 <goal>start</goal>
               </goals>
@@ -100,7 +100,7 @@
               </configuration>
             </execution>
             <execution>
-              <id>stop</id>
+              <_id>stop</_id>
               <goals>
                 <goal>stop</goal>
               </goals>

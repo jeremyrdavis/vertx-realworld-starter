@@ -106,7 +106,7 @@ public class MainVerticle extends AbstractVerticle {
     //TODO: save this to the database
     mongoClient.insert(USER_COLLECTION, user.toJson(), r -> {
       LOGGER.debug(r.result());
-      user.setId(r.result());
+      user.set_id(r.result());
       routingContext.response()
         .setStatusCode(201)
         .putHeader("content-type","application/json; charset=utf-8")

@@ -1,5 +1,8 @@
 package io.vertx.conduit.users;
 
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodProcess;
 import de.flapdoodle.embed.mongo.MongodStarter;
@@ -17,10 +20,13 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.starter.MainVerticle;
+import org.bson.Document;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+
+import static org.junit.Assert.assertNull;
 
 @RunWith(VertxUnitRunner.class)
 public class LoginUserTest {
@@ -65,7 +71,6 @@ public class LoginUserTest {
       .importFile(user.toJson().toString())
       .build();
 
-/*
     try {
       MongoClient mongo = new MongoClient("localhost", MONGO_PORT);
       MongoDatabase database = mongo.getDatabase("conduit");
@@ -75,7 +80,6 @@ public class LoginUserTest {
     } catch (Exception e) {
       assertNull("There should not be an error when pre-populating the database", e);
     }
-*/
 
   }
 
@@ -147,7 +151,7 @@ public class LoginUserTest {
           System.out.println("Returned value: " + user.toJson());
           testContext.assertEquals(user.getUsername(), "username");
           testContext.assertEquals(user.getEmail(), "user@domain.com");
-          testContext.assertNotNull(user.getId());
+          testContext.assertNotNull(user.get_id());
         });
         async.complete();
       }).write(json.toString()).end();

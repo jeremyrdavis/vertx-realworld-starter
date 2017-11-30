@@ -1,6 +1,5 @@
 package io.vertx.conduit.users.models;
 
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -13,7 +12,7 @@ import io.vertx.core.json.JsonObject;
  */
 public class User {
 
-  String id;
+  String _id;
 
   String username;
 
@@ -36,7 +35,7 @@ public class User {
   }
 
   public User(JsonObject jsonObject){
-    this.id = jsonObject.getString("id");
+    this._id = jsonObject.getString("_id");
     this.username = jsonObject.getString("username");
     this.email = jsonObject.getString("email");
 
@@ -46,18 +45,18 @@ public class User {
     JsonObject json = new JsonObject()
       .put("username", username)
       .put("email", email);
-    if (id != null && !id.isEmpty()) {
-      json.put("_id", id);
+    if (_id != null && !_id.isEmpty()) {
+      json.put("_id", _id);
     }
     return json;
   }
 
-  public String getId() {
-    return id;
+  public String get_id() {
+    return _id;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void set_id(String _id) {
+    this._id = _id;
   }
 
   public String getUsername() {
