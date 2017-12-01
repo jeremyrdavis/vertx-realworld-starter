@@ -101,7 +101,8 @@ public class MainVerticle extends AbstractVerticle {
 
     // marshall our payload into a User object
     //final User user = Json.decodeValue(routingContext.getBodyAsString(), User.class);
-    final User user = new User(routingContext.getBodyAsJson());
+    JsonObject jsonObject = routingContext.getBodyAsJson();
+    final User user = new User(jsonObject.getJsonObject("user"));
 
     //TODO: save this to the database
     mongoClient.insert(USER_COLLECTION, user.toJson(), r -> {

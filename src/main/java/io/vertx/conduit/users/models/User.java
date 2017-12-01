@@ -44,11 +44,11 @@ public class User {
   public JsonObject toJson() {
     JsonObject json = new JsonObject()
       .put("username", username)
-      .put("email", email);
-    if (_id != null && !_id.isEmpty()) {
-      json.put("_id", _id);
-    }
-    return json;
+      .put("email", email)
+      .put("_id", _id);
+    JsonObject retVal = new JsonObject();
+    retVal.put("user", json);
+    return retVal;
   }
 
   public String get_id() {
