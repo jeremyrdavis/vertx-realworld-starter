@@ -1,6 +1,5 @@
 package io.vertx.conduit.users.models;
 
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -13,15 +12,20 @@ import io.vertx.core.json.JsonObject;
  */
 public class User {
 
-  private String id;
+  String _id;
 
-  private String username;
+  String username;
 
-  private String email;
+  String email;
 
-  private String password;
+  String password;
 
   public User() {
+  }
+
+  public User(String email, String password) {
+    this.email = email;
+    this.password = password;
   }
 
   public User(String username, String email, String password) {
@@ -31,7 +35,7 @@ public class User {
   }
 
   public User(JsonObject jsonObject){
-    this.id = jsonObject.getString("id");
+    this._id = jsonObject.getString("_id");
     this.username = jsonObject.getString("username");
     this.email = jsonObject.getString("email");
 
@@ -40,19 +44,19 @@ public class User {
   public JsonObject toJson() {
     JsonObject json = new JsonObject()
       .put("username", username)
-      .put("email", email);
-    if (id != null && !id.isEmpty()) {
-      json.put("_id", id);
-    }
-    return json;
+      .put("email", email)
+      .put("_id", _id);
+    JsonObject retVal = new JsonObject();
+    retVal.put("user", json);
+    return retVal;
   }
 
-  public String getId() {
-    return id;
+  public String get_id() {
+    return _id;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void set_id(String _id) {
+    this._id = _id;
   }
 
   public String getUsername() {

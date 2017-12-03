@@ -34,7 +34,7 @@ public class RegisterUserTest {
   private static int MONGO_PORT = 12345;
 
   /**
-   * Setup the embedded MongoDB once before any tests are run
+   * Setup the embedded MongoDB once before any tests are run and insert data
    *
    * @throws IOException
    */
@@ -76,8 +76,8 @@ public class RegisterUserTest {
   public void testRegisteringAUser(TestContext tc) {
     Async async = tc.async();
 
-    final String json = Json.encodePrettily(new User("username", "user@domain.com", "password"));
-    final String length = String.valueOf(json.length());
+    User user = new User("username", "user@domain.com", "password");
+    final String length = String.valueOf(user.toJson().toString().length());
 
     vertx.createHttpClient(new HttpClientOptions()
       .setSsl(true).setTrustAll(true)).post(8080, "localhost", "/api/users")
@@ -87,13 +87,13 @@ public class RegisterUserTest {
           tc.assertEquals(response.statusCode(), 201);
           tc.assertTrue(response.headers().get("content-type").contains("application/json"));
           response.bodyHandler(body -> {
-            final User user = Json.decodeValue(body.toString(), User.class);
-            tc.assertEquals(user.getUsername(), "username");
-            tc.assertEquals(user.getEmail(), "user@domain.com");
-            tc.assertNotNull(user.getId());
+            final User userResult = Json.decodeValue(body.toString(), User.class);
+            tc.assertEquals(userResult.getUsername(), "username");
+            tc.assertEquals(userResult.getEmail(), "user@domain.com");
+            tc.assertNotNull(userResult.get_id());
             async.complete();
           });
-      }).write(json).end();
+      }).write(user.toJson().toString()).end();
   }
 
 }
