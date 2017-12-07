@@ -10,6 +10,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.net.JksOptions;
+import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -22,6 +23,9 @@ public class MainVerticle extends AbstractVerticle {
   // for DB access
   private MongoClient mongoClient;
 
+  // Authentication provider for logging in
+  private MongoAuth loginAuthProvider;
+
   // MongoDB Collection key for users
   public static final String USER_COLLECTION = "conduit_users";
 
@@ -30,6 +34,11 @@ public class MainVerticle extends AbstractVerticle {
 
     // Configure the MongoClient inline.  This should be externalized into a config file
     mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:12345"));
+
+    loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
+
+    JsonObject authProperties = new JsonObject();
+    MongoAuth authProvider = MongoAuth.create(mongoClient, authProperties);
 
     // create a apiRouter to handle the API
     Router baseRouter = Router.router(vertx);
@@ -42,7 +51,7 @@ public class MainVerticle extends AbstractVerticle {
 
     apiRouter.route("/user*").handler(BodyHandler.create());
     apiRouter.get("/user").handler(this::getCurrentUser);
-    apiRouter.post("/users").handler(this::registerUser);
+    apiRouter.post("/users").handler( this::registerUser);
     apiRouter.post("/users/login").handler(this::loginUser);
     baseRouter.mountSubRouter("/api", apiRouter);
 
@@ -63,25 +72,25 @@ public class MainVerticle extends AbstractVerticle {
 
     final User user = Json.decodeValue(routingContext.getBodyAsString(), User.class);
 
-    JsonObject query = new JsonObject().put("email", user.getEmail()).put("password", user.getPassword());
+    JsonObject authInfo = new JsonObject().put("email", user.getEmail()).put("password", user.getPassword());
 
-    mongoClient.find("users", query, r ->{
-      if (r.succeeded()) {
-        // if there is no result
-        if (r.result().isEmpty()) {
-          System.out.println("Did Not Find User");
-          routingContext.response().setStatusCode(404).end();
-        }else{
-          routingContext.response()
-            .setStatusCode(200)
-            .putHeader("content-type", "application/json; charset=utf-8")
-            .end(Json.encodePrettily(r.result()));
-        }
-      }else{
+    loginAuthProvider.setUsernameCredentialField("email");
+    loginAuthProvider.setPasswordCredentialField("password");
+
+    loginAuthProvider.authenticate(authInfo, res ->{
+      if (res.succeeded()) {
+        io.vertx.ext.auth.User userResult = res.result();
+        System.out.println("Found User:" + userResult.toString());
+        routingContext.response()
+          .setStatusCode(200)
+          .putHeader("content-type", "application/json; charset=utf-8")
+          .end(Json.encodePrettily(userResult));
+      } else {
         System.out.println("Did Not Find User");
-        routingContext.response().setStatusCode(500);
+        routingContext.response().setStatusCode(404).end();
       }
     });
+
   }
 
   private void getCurrentUser(RoutingContext routingContext) {

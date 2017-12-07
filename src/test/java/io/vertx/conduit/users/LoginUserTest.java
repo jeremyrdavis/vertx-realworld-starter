@@ -3,6 +3,8 @@ package io.vertx.conduit.users;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Indexes;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodProcess;
 import de.flapdoodle.embed.mongo.MongodStarter;
@@ -11,6 +13,7 @@ import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.runtime.Network;
 import io.vertx.conduit.errors.ErrorMessages;
 import io.vertx.conduit.errors.LoginError;
+import io.vertx.conduit.users.models.MongConstants;
 import io.vertx.conduit.users.models.TestUser;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
@@ -18,6 +21,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -62,8 +66,8 @@ public class LoginUserTest {
     IMongoImportConfig mongoImportConfig = new MongoImportConfigBuilder()
       .version(Version.Main.PRODUCTION)
       .net(new Net("localhost", MONGO_PORT, Network.localhostIsIPv6()))
-      .db("conduit")
-      .collection("users")
+      .db(MongConstants.DB_NAME.value)
+      .collection(MongConstants.COLLECTION_NAME_USERS.value)
       .upsert(true)
       .dropCollection(true)
       .jsonArray(false)
@@ -72,8 +76,11 @@ public class LoginUserTest {
 
     try {
       MongoClient mongo = new MongoClient("localhost", MONGO_PORT);
-      MongoDatabase database = mongo.getDatabase("conduit");
-      MongoCollection<Document> collection = database.getCollection("users");
+      MongoDatabase database = mongo.getDatabase(MongConstants.DB_NAME.value);
+      MongoCollection<Document> collection = database.getCollection(MongoAuth.DEFAULT_COLLECTION_NAME);
+
+      // add an index so that the username field is unique
+      collection.createIndex(Indexes.text("email"), new IndexOptions().unique(true));
       Document document = new Document("username", "username").append("email", "email@domain.com").append("password", "password");
       collection.insertOne(document);
     } catch (Exception e) {
@@ -94,6 +101,7 @@ public class LoginUserTest {
       );
 
     vertx.deployVerticle(MainVerticle.class.getName(), options, tc.asyncAssertSuccess());
+
   }
 
   @After
