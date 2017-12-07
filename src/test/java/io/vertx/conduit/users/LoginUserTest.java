@@ -63,39 +63,6 @@ public class LoginUserTest {
     MongodExecutable mongodExecutable = starter.prepare(mongodConfig);
     MONGO = mongodExecutable.start();
 
-    User user = new User("username", "email@domain.com", "password");
-
-    IMongoImportConfig mongoImportConfig = new MongoImportConfigBuilder()
-      .version(Version.Main.PRODUCTION)
-      .net(new Net("localhost", MONGO_PORT, Network.localhostIsIPv6()))
-      .db(MongConstants.DB_NAME.value)
-      .collection(MongConstants.COLLECTION_NAME_USERS.value)
-      .upsert(true)
-      .dropCollection(true)
-      .jsonArray(false)
-      .importFile(user.toJson().toString())
-      .build();
-
-    try {
-      com.mongodb.MongoClient mongo = new com.mongodb.MongoClient("localhost", MONGO_PORT);
-      MongoDatabase database = mongo.getDatabase(MongConstants.DB_NAME.value);
-      MongoCollection<Document> collection = database.getCollection(MongoAuth.DEFAULT_COLLECTION_NAME);
-
-
-      // add an index so that the username field is unique
-      collection.createIndex(Indexes.text("email"), new IndexOptions().unique(true));
-      Document document = new Document().append("email", "email@domain.com").append("password", "password");
-      collection.insertOne(document);
-
-      FindIterable<Document> all = collection.find();
-      for (Document d : all) {
-        System.out.println(d.toJson());
-      }
-
-    } catch (Exception e) {
-      assertNull("There should not be an error when pre-populating the database", e);
-    }
-
   }
 
   @Before
@@ -176,7 +143,7 @@ public class LoginUserTest {
           testContext.assertNotNull(body);
           final LoginError loginError = Json.decodeValue(body.toString(), LoginError.class);
           System.out.println("Returned value: " + loginError.toJson());
-          testContext.assertEquals(loginError.getMessage(), ErrorMessages.LOGIN_ERROR.message);
+          testContext.assertEquals(loginError.getMessage(), ErrorMessages.LOGIN_ERROR);
         });
         async.complete();
       }).write(json.toString()).end();

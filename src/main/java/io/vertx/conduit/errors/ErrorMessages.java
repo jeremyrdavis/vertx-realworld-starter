@@ -5,13 +5,8 @@ package io.vertx.conduit.errors;
  * Convenience class for storing error messages
  *
  */
-public enum ErrorMessages {
+public class ErrorMessages {
 
-  LOGIN_ERROR("No user found with that email and password combination");
+  public static final String LOGIN_ERROR = "No user found with that email and password combination";
 
-  public String message;
-
-  private ErrorMessages(String messageToSet) {
-    message = messageToSet;
-  }
 }

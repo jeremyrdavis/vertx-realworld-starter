@@ -1,5 +1,7 @@
 package io.vertx.starter;
 
+import io.vertx.conduit.errors.ErrorMessages;
+import io.vertx.conduit.errors.LoginError;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -87,7 +89,9 @@ public class MainVerticle extends AbstractVerticle {
           .end(Json.encodePrettily(userResult));
       } else {
         System.out.println("Did Not Find User");
-        routingContext.response().setStatusCode(404).end();
+        routingContext.response().setStatusCode(422)
+          .putHeader("content-type", "application/json; charset=utf-8")
+          .end(Json.encodePrettily(new LoginError(ErrorMessages.LOGIN_ERROR)));
       }
     });
 
