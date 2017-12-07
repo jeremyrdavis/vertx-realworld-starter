@@ -1,6 +1,6 @@
 package io.vertx.conduit.users;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
@@ -31,8 +31,10 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 @RunWith(VertxUnitRunner.class)
 public class LoginUserTest {
@@ -75,14 +77,21 @@ public class LoginUserTest {
       .build();
 
     try {
-      MongoClient mongo = new MongoClient("localhost", MONGO_PORT);
+      com.mongodb.MongoClient mongo = new com.mongodb.MongoClient("localhost", MONGO_PORT);
       MongoDatabase database = mongo.getDatabase(MongConstants.DB_NAME.value);
       MongoCollection<Document> collection = database.getCollection(MongoAuth.DEFAULT_COLLECTION_NAME);
 
+
       // add an index so that the username field is unique
       collection.createIndex(Indexes.text("email"), new IndexOptions().unique(true));
-      Document document = new Document("username", "username").append("email", "email@domain.com").append("password", "password");
+      Document document = new Document().append("email", "email@domain.com").append("password", "password");
       collection.insertOne(document);
+
+      FindIterable<Document> all = collection.find();
+      for (Document d : all) {
+        System.out.println(d.toJson());
+      }
+
     } catch (Exception e) {
       assertNull("There should not be an error when pre-populating the database", e);
     }
@@ -101,6 +110,15 @@ public class LoginUserTest {
       );
 
     vertx.deployVerticle(MainVerticle.class.getName(), options, tc.asyncAssertSuccess());
+
+    io.vertx.ext.mongo.MongoClient mongoClient = io.vertx.ext.mongo.MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:12345"));
+
+    MongoAuth loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
+    loginAuthProvider.insertUser("email@domain.com", "password", null, null, res ->{
+      if (!res.succeeded()) {
+        fail();
+      }
+    });
 
   }
 
