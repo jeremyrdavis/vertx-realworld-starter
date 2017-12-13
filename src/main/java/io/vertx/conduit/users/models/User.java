@@ -3,12 +3,11 @@ package io.vertx.conduit.users.models;
 import io.vertx.core.json.JsonObject;
 
 /**
+ *
  * username: String,
- email: String,
- bio: String,
- image: String,
- hash: String,
- salt: String
+ * email: String,
+ * password: String,
+ * token: String
  */
 public class User {
 
@@ -19,6 +18,8 @@ public class User {
   String email;
 
   String password;
+
+  String token;
 
   public User() {
   }
@@ -34,10 +35,19 @@ public class User {
     this.password = password;
   }
 
+  public User(String username, String email, String password, String token) {
+    this.username = username;
+    this.email = email;
+    this.password = password;
+    this.token = token;
+  }
+
   public User(JsonObject jsonObject){
-    this._id = jsonObject.getString("_id");
+
+    if(jsonObject.containsKey("_id")) this._id = jsonObject.getString("_id");
     this.username = jsonObject.getString("username");
     this.email = jsonObject.getString("email");
+    this.password = jsonObject.getString("password");
 
   }
 
@@ -45,7 +55,8 @@ public class User {
     JsonObject json = new JsonObject()
       .put("username", username)
       .put("email", email)
-      .put("_id", _id);
+      .put("_id", _id)
+      .put("token", token);
     JsonObject retVal = new JsonObject();
     retVal.put("user", json);
     return retVal;
@@ -81,5 +92,13 @@ public class User {
 
   public void setPassword(String password) {
     this.password = password;
+  }
+
+  public String getToken() {
+    return token;
+  }
+
+  public void setToken(String token) {
+    this.token = token;
   }
 }

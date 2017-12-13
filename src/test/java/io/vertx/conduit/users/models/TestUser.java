@@ -12,6 +12,6 @@ public class TestUser extends User {
     JsonObject json = new JsonObject()
       .put("email", email)
       .put("password", password);
-      return json;
+    return new JsonObject().put("user", json);
   }
 }

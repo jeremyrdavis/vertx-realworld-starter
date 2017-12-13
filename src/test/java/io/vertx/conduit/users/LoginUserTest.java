@@ -1,10 +1,5 @@
 package io.vertx.conduit.users;
 
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.IndexOptions;
-import com.mongodb.client.model.Indexes;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodProcess;
 import de.flapdoodle.embed.mongo.MongodStarter;
@@ -13,9 +8,8 @@ import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.runtime.Network;
 import io.vertx.conduit.errors.ErrorMessages;
 import io.vertx.conduit.errors.LoginError;
-import io.vertx.conduit.users.models.MongConstants;
-import io.vertx.conduit.users.models.TestUser;
 import io.vertx.conduit.users.models.User;
+import io.vertx.conduit.users.models.TestUser;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
@@ -26,12 +20,10 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.starter.MainVerticle;
-import org.bson.Document;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -97,6 +89,40 @@ public class LoginUserTest {
   @AfterClass
   public static void shutdown() {  MONGO.stop(); }
 
+  /*
+  @Test
+  public void webClientTest(TestContext testContext) {
+
+    Async async = testContext.async();
+
+    JsonObject json = new TestUser("email@domain.com", "password").toLoginJson();
+    final String length = String.valueOf(json.toString().length());
+
+
+    HttpClientRequest req = vertx.createHttpClient(new HttpClientOptions()
+      .setSsl(true)
+      .setTrustAll(true))
+      .post(8080, "localhost", "/api/users/login");
+
+    req.handler(res ->{
+      testContext.assertTrue(res.statusCode(), 200);
+      HttpClientResponse httpClientResponse = res.bodyHandler();
+      httpClientResponse.
+    });
+
+
+    WebClient webClient = WebClient.create(vertx);
+    webClient.post(8080, "localhost/api/users/login", json.toString()).send(ar ->{
+      testContext.assertTrue(ar.succeeded());
+      HttpResponse<Buffer> response = ar.result();
+      final User conduitUser = Json.decodeValue(response.toString(), User.class);
+      System.out.println("Returned value: " + conduitUser.toJson());
+      testContext.assertNotNull(conduitUser);
+    });
+
+  }
+  */
+
   @Test
   public void testLoggingIn(TestContext testContext) {
     Async async = testContext.async();
@@ -104,8 +130,8 @@ public class LoginUserTest {
     JsonObject json = new TestUser("email@domain.com", "password").toLoginJson();
     final String length = String.valueOf(json.toString().length());
 
-    vertx.createHttpClient(new HttpClientOptions()
-      .setSsl(true).setTrustAll(true)).post(8080, "localhost", "/api/users/login")
+    vertx.createHttpClient(new HttpClientOptions().setSsl(true).setTrustAll(true))
+      .post(8080, "localhost", "/api/users/login")
       .putHeader("content-type", "application/json")
       .putHeader("content-length", length)
       .handler(response -> {
@@ -115,8 +141,9 @@ public class LoginUserTest {
           testContext.assertNotNull(body);
           final User user = Json.decodeValue(body.toString(), User.class);
           System.out.println("Returned value: " + user.toJson());
-          testContext.assertEquals(user.getUsername(), "username");
+          testContext.assertEquals(user.getUsername(), "foo");
           testContext.assertEquals(user.getEmail(), "user@domain.com");
+          testContext.assertTrue(user.getToken().length() >= 1);
           testContext.assertNotNull(user.get_id());
         });
         async.complete();

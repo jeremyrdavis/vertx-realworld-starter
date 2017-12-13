@@ -72,7 +72,11 @@ public class MainVerticle extends AbstractVerticle {
 
   private void loginUser(RoutingContext routingContext) {
 
-    final User user = Json.decodeValue(routingContext.getBodyAsString(), User.class);
+    JsonObject body = routingContext.getBodyAsJson();
+
+    final User user = new User(routingContext.getBodyAsJson().getJsonObject("user"));
+
+//    final User user = Json.decodeValue(routingContext.getBodyAsString(), User.class);
 
     JsonObject authInfo = new JsonObject().put("email", user.getEmail()).put("password", user.getPassword());
 
