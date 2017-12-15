@@ -57,7 +57,7 @@ public class RegisterUserTest {
     DeploymentOptions options = new DeploymentOptions()
       .setConfig(new JsonObject()
         .put("http.port", 8080)
-        .put("db_name", "users")
+        .put("db_name", "conduit")
         .put("connection_string", "mongodb://localhost:" + MONGO_PORT)
       );
 
@@ -88,8 +88,9 @@ public class RegisterUserTest {
           tc.assertTrue(response.headers().get("content-type").contains("application/json"));
           response.bodyHandler(body -> {
             final User userResult = Json.decodeValue(body.toString(), User.class);
-            tc.assertEquals(userResult.getUsername(), "username");
-            tc.assertEquals(userResult.getEmail(), "user@domain.com");
+            System.out.println(userResult.toJson().toString());
+            tc.assertEquals("username", userResult.getUsername());
+            tc.assertEquals("user@domain.com", userResult.getEmail());
             tc.assertNotNull(userResult.get_id());
             async.complete();
           });

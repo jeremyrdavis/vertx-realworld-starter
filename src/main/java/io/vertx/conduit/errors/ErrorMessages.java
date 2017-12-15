@@ -9,4 +9,5 @@ public class ErrorMessages {
 
   public static final String LOGIN_ERROR = "No user found with that email and password combination";
 
+  public static final String REGISTRATION_ERROR = "Unable to register user.";
 }

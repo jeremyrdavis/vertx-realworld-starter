@@ -2,18 +2,17 @@ package io.vertx.conduit.errors;
 
 import io.vertx.core.json.JsonObject;
 
-import java.io.Serializable;
+public class RegistrationError extends Error{
 
-public class LoginError extends Exception implements Serializable{
-
-  public LoginError(String message) {
+  public RegistrationError(String message) {
     super(message);
   }
 
-  public LoginError(){super(ErrorMessages.LOGIN_ERROR);}
+  public RegistrationError(){super(ErrorMessages.REGISTRATION_ERROR);}
 
   public JsonObject toJson() {
     JsonObject message = new JsonObject().put("message", getMessage());
     return new JsonObject().put("message", message);
   }
+
 }

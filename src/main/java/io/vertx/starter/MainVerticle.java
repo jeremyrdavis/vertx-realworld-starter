@@ -2,6 +2,8 @@ package io.vertx.starter;
 
 import io.vertx.conduit.errors.ErrorMessages;
 import io.vertx.conduit.errors.LoginError;
+import io.vertx.conduit.errors.RegistrationError;
+import io.vertx.conduit.users.models.MongoConstants;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -29,7 +31,7 @@ public class MainVerticle extends AbstractVerticle {
   private MongoAuth loginAuthProvider;
 
   // MongoDB Collection key for users
-  public static final String USER_COLLECTION = "conduit_users";
+  public static final String USER_COLLECTION = "users";
 
   @Override
   public void start(Future<Void> future) {
@@ -38,6 +40,7 @@ public class MainVerticle extends AbstractVerticle {
     mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:12345"));
 
     loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
+    loginAuthProvider.setUsernameField("email");
 
     JsonObject authProperties = new JsonObject();
     MongoAuth authProvider = MongoAuth.create(mongoClient, authProperties);
@@ -85,19 +88,32 @@ public class MainVerticle extends AbstractVerticle {
 
     loginAuthProvider.authenticate(authInfo, res ->{
       if (res.succeeded()) {
-        io.vertx.ext.auth.User userResult = res.result();
-        System.out.println("Found User:" + userResult.toString());
-        routingContext.response()
-          .setStatusCode(200)
-          .putHeader("content-type", "application/json; charset=utf-8")
-          .end(Json.encodePrettily(userResult));
-      } else {
-        System.out.println("Did Not Find User");
-        routingContext.response().setStatusCode(422)
-          .putHeader("content-type", "application/json; charset=utf-8")
-          .end(Json.encodePrettily(new LoginError(ErrorMessages.LOGIN_ERROR)));
-      }
-    });
+              mongoClient.findOne("user", new JsonObject().put("email", user.getEmail()),null, r->{
+                if(r.succeeded()){
+                  User loggedInUser = new User(r.result());
+                  routingContext.response()
+                    .setStatusCode(200)
+                    .putHeader("Content-Type", "application/json; charset=utf-8")
+                    //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+                    .end(Json.encodePrettily(loggedInUser.toJson()));
+                }else{
+                  System.out.println("Did Not Find User");
+                  LoginError loginError = new LoginError(ErrorMessages.LOGIN_ERROR);
+                  routingContext.response().setStatusCode(422)
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    //.putHeader("Content-Length", String.valueOf(loginError.toString().length()))
+                    .end(Json.encodePrettily(loginError));
+                }
+              });
+            }else{
+              System.out.println("Did Not Authenticate User");
+              LoginError loginError = new LoginError(ErrorMessages.LOGIN_ERROR);
+              routingContext.response().setStatusCode(422)
+                .putHeader("content-type", "application/json; charset=utf-8")
+                //.putHeader("Content-Length", String.valueOf(loginError.toString().length()))
+                .end(Json.encodePrettily(loginError));
+            }
+        });
 
   }
 
@@ -121,7 +137,42 @@ public class MainVerticle extends AbstractVerticle {
     JsonObject jsonObject = routingContext.getBodyAsJson();
     final User user = new User(jsonObject.getJsonObject("user"));
 
+//    mongoClient.insert(MongoConstants.COLLECTION_NAME_USERS, user.toMongoJson(), r ->{
+//      if (r.succeeded()) {
+//        user.set_id(r.result());
+//        routingContext.response()
+//          .setStatusCode(201)
+//          .putHeader("content-type", "application/json; charset=utf-8")
+//          .end(Json.encodePrettily(user));
+//      }else{
+//        routingContext.response()
+//          .setStatusCode(500)
+//          .putHeader("content-type", "application/json; charset=utf-8")
+//          .end(Json.encodePrettily(new RegistrationError()));
+//      }
+//    });
+
+    loginAuthProvider.insertUser(user.getEmail(), user.getPassword(), null, null, res -> {
+        if (!res.succeeded()) {
+          routingContext.response()
+            .setStatusCode(422)
+            .putHeader("content-type", "application/json; charset=utf-8")
+            .end(Json.encodePrettily(user));
+        } else {
+          user.set_id(res.result());
+          routingContext.response()
+            .setStatusCode(201)
+            .putHeader("content-type", "application/json; charset=utf-8")
+            .end(Json.encodePrettily(user));
+        }
+      });
+
     //TODO: save this to the database
+/*    loginAuthProvider.insertUser(user.toJson());
+    routingContext.response()
+      .setStatusCode(201)
+      .putHeader("content-type","application/json; charset=utf-8")
+      .end(Json.encodePrettily(user));
     mongoClient.insert(USER_COLLECTION, user.toJson(), r -> {
       LOGGER.debug(r.result());
       user.set_id(r.result());
@@ -130,7 +181,7 @@ public class MainVerticle extends AbstractVerticle {
         .putHeader("content-type","application/json; charset=utf-8")
         .end(Json.encodePrettily(user));
     });
-
+*/
   }
 
 }

@@ -2,6 +2,8 @@ package io.vertx.conduit.users.models;
 
 import io.vertx.core.json.JsonObject;
 
+import java.net.URI;
+
 /**
  *
  * username: String,
@@ -20,6 +22,10 @@ public class User {
   String password;
 
   String token;
+
+  String bio;
+
+  String image;
 
   public User() {
   }
@@ -48,6 +54,7 @@ public class User {
     this.username = jsonObject.getString("username");
     this.email = jsonObject.getString("email");
     this.password = jsonObject.getString("password");
+    if(jsonObject.containsKey("token")) this.token = jsonObject.getString("token");
 
   }
 
@@ -60,6 +67,16 @@ public class User {
     JsonObject retVal = new JsonObject();
     retVal.put("user", json);
     return retVal;
+  }
+
+  public JsonObject toMongoJson(){
+    return new JsonObject()
+      .put("username", username)
+      .put("email", email)
+      .put("_id", _id)
+      .put("token", token)
+      .put("bio", bio);
+
   }
 
   public String get_id() {
@@ -100,5 +117,21 @@ public class User {
 
   public void setToken(String token) {
     this.token = token;
+  }
+
+  public String getBio() {
+    return bio;
+  }
+
+  public void setBio(String bio) {
+    this.bio = bio;
+  }
+
+  public String getImage() {
+    return image;
+  }
+
+  public void setImage(String image) {
+    this.image = image;
   }
 }
