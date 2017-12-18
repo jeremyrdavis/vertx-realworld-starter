@@ -152,6 +152,7 @@ public class MainVerticle extends AbstractVerticle {
 //      }
 //    });
 
+    // insert into the authentication collection
     loginAuthProvider.insertUser(user.getEmail(), user.getPassword(), null, null, res -> {
         if (!res.succeeded()) {
           routingContext.response()
@@ -159,11 +160,21 @@ public class MainVerticle extends AbstractVerticle {
             .putHeader("content-type", "application/json; charset=utf-8")
             .end(Json.encodePrettily(user));
         } else {
+          // now save to the conduit_users collection
           user.set_id(res.result());
-          routingContext.response()
-            .setStatusCode(201)
-            .putHeader("content-type", "application/json; charset=utf-8")
-            .end(Json.encodePrettily(user));
+          mongoClient.insert(MongoConstants.COLLECTION_NAME_USERS, user.toMongoJson(), r ->{
+            if (r.succeeded()) {
+              routingContext.response()
+                .setStatusCode(201)
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .end(Json.encodePrettily(user));
+            }else{
+              routingContext.response()
+                .setStatusCode(500)
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .end(Json.encodePrettily(new RegistrationError()));
+            }
+          });
         }
       });
 
