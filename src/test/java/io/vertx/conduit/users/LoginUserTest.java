@@ -81,6 +81,18 @@ public class LoginUserTest {
 
     MongoAuth loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
     loginAuthProvider.setUsernameField("email");
+
+    mongoClient.dropCollection(MongoConstants.COLLECTION_NAME_USERS, r->{
+      if (!r.succeeded()) {
+        fail("Failure deleting the collection " + MongoConstants.COLLECTION_NAME_USERS);
+      }
+    });
+    mongoClient.dropCollection(MongoAuth.DEFAULT_COLLECTION_NAME, r->{
+      if (!r.succeeded()) {
+        fail("Failure deleting the collection " + MongoAuth.DEFAULT_COLLECTION_NAME);
+      }
+    });
+
     loginAuthProvider.insertUser(testUser.getEmail(), testUser.getPassword(), null, null, res ->{
       if (res.succeeded()) {
         System.out.println("inserted " + res.result());
