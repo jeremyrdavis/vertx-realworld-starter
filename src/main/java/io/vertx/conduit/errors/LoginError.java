@@ -10,7 +10,7 @@ public class LoginError extends Exception implements Serializable{
     super(message);
   }
 
-  public LoginError(){super(ErrorMessages.LOGIN_ERROR);}
+  public LoginError(){super(ErrorMessages.AUTHENTICATION_ERROR_LOGIN);}
 
   public JsonObject toJson() {
     JsonObject message = new JsonObject().put("message", getMessage());

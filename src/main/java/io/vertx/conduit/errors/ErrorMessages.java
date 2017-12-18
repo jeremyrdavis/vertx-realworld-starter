@@ -7,7 +7,8 @@ package io.vertx.conduit.errors;
  */
 public class ErrorMessages {
 
-  public static final String LOGIN_ERROR = "No user found with that email and password combination";
-
+  public static String AUTHENTICATION_ERROR_DEFAULT = "Error authenticating supplied credentials";
+  public static final String AUTHENTICATION_ERROR_LOGIN = "No user found with that email and password combination";
   public static final String REGISTRATION_ERROR = "Unable to register user.";
+
 }

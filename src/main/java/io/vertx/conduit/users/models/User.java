@@ -62,7 +62,6 @@ public class User {
     JsonObject json = new JsonObject()
       .put("username", username)
       .put("email", email)
-      .put("_id", _id)
       .put("token", token);
     JsonObject retVal = new JsonObject();
     retVal.put("user", json);

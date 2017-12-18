@@ -27,6 +27,5 @@ public class DBSetupVerticle extends AbstractVerticle{
 
     // Configure the MongoClient inline.  This should be externalized into a config file
     mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:12345"));
-
   }
 }

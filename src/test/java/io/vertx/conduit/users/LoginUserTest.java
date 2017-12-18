@@ -12,7 +12,6 @@ import io.vertx.conduit.users.models.MongoConstants;
 import io.vertx.conduit.users.models.User;
 import io.vertx.conduit.users.models.TestUser;
 import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.Json;
@@ -75,31 +74,28 @@ public class LoginUserTest {
 
     io.vertx.ext.mongo.MongoClient mongoClient = io.vertx.ext.mongo.MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:12345"));
 
+    User testUser = new User("username", "email@domain.com", "password");
+
     Async async = tc.async();
+
     MongoAuth loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
     loginAuthProvider.setUsernameField("email");
-    loginAuthProvider.insertUser("email@domain.com", "password", null, null, res ->{
+    loginAuthProvider.insertUser(testUser.getEmail(), testUser.getPassword(), null, null, res ->{
       if (res.succeeded()) {
         System.out.println("inserted " + res.result());
+        mongoClient.insert(MongoConstants.COLLECTION_NAME_USERS, testUser.toMongoJson(), r-> {
+          if (r.succeeded()) {
+            async.complete();
+          }else{
+            fail("Error inserting test user");
+          }
+        });
         async.complete();
       }else{
         async.complete();
         fail();
       }
     });
-
-//    User testUser = new User("username", "email@domain.com", "password");
-//    testUser.setBio("I am a new user of conduit");
-
-//    Async async = tc.async();
-//    mongoClient.insert(MongoConstants.COLLECTION_NAME_USERS, testUser.toJson(), r->{
-//      if (r.succeeded()) {
-//        async.complete();
-//      }else{
-//        fail();
-//        async.complete();
-//      }
-//    });
 
   }
 
@@ -162,11 +158,17 @@ public class LoginUserTest {
         response.bodyHandler(body -> {
           testContext.assertNotNull(body);
           System.out.println("Returned body: " + body.toString());
+
           final User user = new User(body.toJsonObject().getJsonObject("user"));
           System.out.println("Returned value: " + user.toJson());
+
           testContext.assertEquals("email@domain.com", user.getEmail());
-//          testContext.assertTrue(user.getToken().length() >= 1);
-          testContext.assertNotNull(user.get_id());
+          testContext.assertNotNull(user.getUsername(), "username should not be null");
+          testContext.assertNull(user.get_id());
+          testContext.assertNull(user.getPassword());
+          //testContext.assertNotNull(user.getToken(), "token should not be null");
+          //testContext.assertTrue(user.getToken().length() >= 1);
+
           async.complete();
         });
       }).write(json.toString()).end();
@@ -193,7 +195,7 @@ public class LoginUserTest {
           testContext.assertNotNull(body);
           final LoginError loginError = Json.decodeValue(body.toString(), LoginError.class);
           System.out.println("Returned value: " + loginError.toJson());
-          testContext.assertEquals(loginError.getMessage(), ErrorMessages.LOGIN_ERROR);
+          testContext.assertEquals(loginError.getMessage(), ErrorMessages.AUTHENTICATION_ERROR_LOGIN);
         });
         async.complete();
       }).write(json.toString()).end();
