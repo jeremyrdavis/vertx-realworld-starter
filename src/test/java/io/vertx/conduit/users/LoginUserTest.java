@@ -76,7 +76,8 @@ public class LoginUserTest {
 
     User testUser = new User("username", "email@domain.com", "password");
 
-    Async async = tc.async();
+    Async async1 = tc.async();
+    Async async2 = tc.async();
 
     MongoAuth loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
     loginAuthProvider.setUsernameField("email");
@@ -85,14 +86,14 @@ public class LoginUserTest {
         System.out.println("inserted " + res.result());
         mongoClient.insert(MongoConstants.COLLECTION_NAME_USERS, testUser.toMongoJson(), r-> {
           if (r.succeeded()) {
-            async.complete();
+            async2.complete();
           }else{
             fail("Error inserting test user");
           }
         });
-        async.complete();
+        async1.complete();
       }else{
-        async.complete();
+        async1.complete();
         fail();
       }
     });
@@ -166,7 +167,7 @@ public class LoginUserTest {
           testContext.assertNotNull(user.getUsername(), "username should not be null");
           testContext.assertNull(user.get_id());
           testContext.assertNull(user.getPassword());
-          //testContext.assertNotNull(user.getToken(), "token should not be null");
+          testContext.assertNotNull(user.getToken(), "token should not be null");
           //testContext.assertTrue(user.getToken().length() >= 1);
 
           async.complete();

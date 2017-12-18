@@ -15,6 +15,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.net.JksOptions;
+import io.vertx.ext.auth.jwt.JWTAuth;
+import io.vertx.ext.auth.jwt.JWTOptions;
 import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.web.Router;
@@ -31,8 +33,8 @@ public class MainVerticle extends AbstractVerticle {
   // Authentication provider for logging in
   private MongoAuth loginAuthProvider;
 
-  // MongoDB Collection key for users
-  public static final String USER_COLLECTION = "users";
+  // Authentication provider for the api
+  private JWTAuth jwtAuth;
 
   @Override
   public void start(Future<Void> future) {
@@ -40,11 +42,17 @@ public class MainVerticle extends AbstractVerticle {
     // Configure the MongoClient inline.  This should be externalized into a config file
     mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:12345"));
 
+    // Configure authentication with MongoDB
     loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
     loginAuthProvider.setUsernameField("email");
-
     JsonObject authProperties = new JsonObject();
     MongoAuth authProvider = MongoAuth.create(mongoClient, authProperties);
+
+    // Configure authentication with JWT
+    jwtAuth = JWTAuth.create(vertx, new JsonObject().put("keyStore", new JsonObject()
+      .put("type", "jceks")
+      .put("path", "keystore.jceks")
+      .put("password", "secret")));
 
     // create a apiRouter to handle the API
     Router baseRouter = Router.router(vertx);
@@ -88,9 +96,12 @@ public class MainVerticle extends AbstractVerticle {
 
     loginAuthProvider.authenticate(authInfo, res ->{
       if (res.succeeded()) {
+        // lookup the User
               mongoClient.findOne(MongoConstants.COLLECTION_NAME_USERS, new JsonObject().put("email", user.getEmail()),null, r->{
                 if(r.succeeded()){
                   User loggedInUser = new User(r.result());
+                  // get the JWT Token
+                  loggedInUser.setToken(jwtAuth.generateToken(new JsonObject(), new JWTOptions().setExpiresInSeconds(60L)));
                   routingContext.response()
                     .setStatusCode(200)
                     .putHeader("Content-Type", "application/json; charset=utf-8")
