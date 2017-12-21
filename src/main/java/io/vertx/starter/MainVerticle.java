@@ -22,6 +22,7 @@ import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.JWTAuthHandler;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -64,9 +65,14 @@ public class MainVerticle extends AbstractVerticle {
     });
 
     apiRouter.route("/user*").handler(BodyHandler.create());
-    apiRouter.get("/user").handler(this::getCurrentUser);
     apiRouter.post("/users").handler( this::registerUser);
     apiRouter.post("/users/login").handler(this::loginUser);
+
+    apiRouter.route().handler(JWTAuthHandler.create(jwtAuth, "/api/users/login"));
+
+    // following routes will be protected
+    apiRouter.get("/user").handler(this::getCurrentUser);
+    apiRouter.post("/user").handler(this::updateUser);
     baseRouter.mountSubRouter("/api", apiRouter);
 
     vertx.createHttpServer(new HttpServerOptions()
@@ -80,6 +86,18 @@ public class MainVerticle extends AbstractVerticle {
           future.fail(result.cause());
         }
       });
+  }
+
+  private void updateUser(RoutingContext routingContext) {
+
+    JsonObject body = routingContext.getBodyAsJson();
+    final User userToUpdate = Json.decodeValue(routingContext.getBodyAsJson().getJsonObject("user").toString(), User.class);
+    routingContext.response()
+      .setStatusCode(200)
+      .putHeader("Content-Type", "application/json; charset=utf-8")
+      //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+      .end(Json.encodePrettily(userToUpdate.toJson()));
+
   }
 
   private void loginUser(RoutingContext routingContext) {
@@ -101,7 +119,7 @@ public class MainVerticle extends AbstractVerticle {
                 if(r.succeeded()){
                   User loggedInUser = new User(r.result());
                   // get the JWT Token
-                  loggedInUser.setToken(jwtAuth.generateToken(new JsonObject(), new JWTOptions().setExpiresInSeconds(60L)));
+                  loggedInUser.setToken(jwtAuth.generateToken(new JsonObject(), new JWTOptions().setExpiresInMinutes(60L)));
                   routingContext.response()
                     .setStatusCode(200)
                     .putHeader("Content-Type", "application/json; charset=utf-8")

@@ -78,6 +78,28 @@ public class User {
 
   }
 
+  /**
+   * Returns the publicly available profile information for the user
+   *
+     {
+       "profile": {
+       "username": "jake",
+       "bio": "I work at statefarm",
+       "image": "https://static.productionready.io/images/smiley-cyrus.jpg",
+       "following": false
+       }
+     }
+   *
+   * @return JsonObject
+   */
+  public JsonObject getProfile(){
+    return new JsonObject().put("profile", new JsonObject()
+    .put("username", this.username)
+    .put("bio", this.bio)
+    .put("image", this.image)
+    .put("following", false));
+  }
+
   public String get_id() {
     return _id;
   }

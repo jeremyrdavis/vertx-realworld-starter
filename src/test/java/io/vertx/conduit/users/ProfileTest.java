@@ -3,20 +3,22 @@ package io.vertx.conduit.users;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodProcess;
 import de.flapdoodle.embed.mongo.MongodStarter;
-import de.flapdoodle.embed.mongo.config.*;
+import de.flapdoodle.embed.mongo.config.IMongodConfig;
+import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
+import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.runtime.Network;
-import io.vertx.conduit.errors.ErrorMessages;
-import io.vertx.conduit.errors.LoginError;
 import io.vertx.conduit.users.models.MongoConstants;
-import io.vertx.conduit.users.models.User;
 import io.vertx.conduit.users.models.TestUser;
+import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.jwt.JWTAuth;
+import io.vertx.ext.auth.jwt.JWTOptions;
 import io.vertx.ext.auth.mongo.MongoAuth;
+import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -26,17 +28,21 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(VertxUnitRunner.class)
-public class LoginUserTest {
+public class ProfileTest {
+
+  private static final String TEST_USER_BIO = "This is my bio.";
 
   private Vertx vertx;
 
-  // MongoDB stuff
   private static MongodProcess MONGO;
 
   private static int MONGO_PORT = 12345;
+
+  private User testUser;
 
   /**
    * Setup the embedded MongoDB once before any tests are run
@@ -54,7 +60,6 @@ public class LoginUserTest {
       .build();
     MongodExecutable mongodExecutable = starter.prepare(mongodConfig);
     MONGO = mongodExecutable.start();
-
   }
 
   @Before
@@ -70,9 +75,9 @@ public class LoginUserTest {
 
     vertx.deployVerticle(MainVerticle.class.getName(), options, tc.asyncAssertSuccess());
 
-    io.vertx.ext.mongo.MongoClient mongoClient = io.vertx.ext.mongo.MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:12345"));
+    MongoClient mongoClient = io.vertx.ext.mongo.MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:12345"));
 
-    User testUser = new User("username", "email@domain.com", "password");
+    testUser = new User("username","email@domain.com","password");
 
     Async async1 = tc.async();
     Async async2 = tc.async();
@@ -93,7 +98,6 @@ public class LoginUserTest {
 
     loginAuthProvider.insertUser(testUser.getEmail(), testUser.getPassword(), null, null, res ->{
       if (res.succeeded()) {
-        System.out.println("inserted " + res.result());
         mongoClient.insert(MongoConstants.COLLECTION_NAME_USERS, testUser.toMongoJson(), r-> {
           if (r.succeeded()) {
             async2.complete();
@@ -108,8 +112,14 @@ public class LoginUserTest {
       }
     });
 
-  }
+    JWTAuth jwtAuth = JWTAuth.create(vertx, new JsonObject().put("keyStore", new JsonObject()
+      .put("type", "jceks")
+      .put("path", "keystore.jceks")
+      .put("password", "secret")));
 
+    testUser.setToken(jwtAuth.generateToken(new JsonObject().put("sub", testUser.getEmail()), new JWTOptions()));
+
+  }
   @After
   public void tearDown(TestContext tc) {
     vertx.close(tc.asyncAssertSuccess());
@@ -118,47 +128,15 @@ public class LoginUserTest {
   @AfterClass
   public static void shutdown() {  MONGO.stop(); }
 
-  /*
   @Test
-  public void webClientTest(TestContext testContext) {
-
+  public void testUpdatingUser(TestContext testContext) {
     Async async = testContext.async();
 
     JsonObject json = new TestUser("email@domain.com", "password").toLoginJson();
     final String length = String.valueOf(json.toString().length());
 
-
-    HttpClientRequest req = vertx.createHttpClient(new HttpClientOptions()
-      .setSsl(true)
-      .setTrustAll(true))
-      .post(8080, "localhost", "/api/users/login");
-
-    req.handler(res ->{
-      testContext.assertTrue(res.statusCode(), 200);
-      HttpClientResponse httpClientResponse = res.bodyHandler();
-      httpClientResponse.
-    });
-
-
-    WebClient webClient = WebClient.create(vertx);
-    webClient.post(8080, "localhost/api/users/login", json.toString()).send(ar ->{
-      testContext.assertTrue(ar.succeeded());
-      HttpResponse<Buffer> response = ar.result();
-      final User conduitUser = Json.decodeValue(response.toString(), User.class);
-      System.out.println("Returned value: " + conduitUser.toJson());
-      testContext.assertNotNull(conduitUser);
-    });
-
-  }
-  */
-
-  @Test
-  public void testLoggingIn(TestContext testContext) {
-    Async async = testContext.async();
-
-    JsonObject json = new TestUser("email@domain.com", "password").toLoginJson();
-    final String length = String.valueOf(json.toString().length());
-
+/*
+    // Log our user in so that we can get a JWT Token
     vertx.createHttpClient(new HttpClientOptions().setSsl(true).setTrustAll(true))
       .post(8080, "localhost", "/api/users/login")
       .putHeader("content-type", "application/json")
@@ -167,49 +145,52 @@ public class LoginUserTest {
         testContext.assertEquals(response.statusCode(), 200);
         testContext.assertTrue(response.headers().get("content-type").contains("application/json"));
         response.bodyHandler(body -> {
-          testContext.assertNotNull(body);
-          System.out.println("Returned body: " + body.toString());
-
-          final User user = new User(body.toJsonObject().getJsonObject("user"));
-          System.out.println("Returned value: " + user.toJson());
-
-          testContext.assertEquals("email@domain.com", user.getEmail());
-          testContext.assertNotNull(user.getUsername(), "username should not be null");
-          testContext.assertNull(user.get_id());
-          testContext.assertNull(user.getPassword());
-          testContext.assertNotNull(user.getToken(), "token should not be null");
-          //testContext.assertTrue(user.getToken().length() >= 1);
-
+          testUser = new User(body.toJsonObject().getJsonObject("user"));
           async.complete();
         });
       }).write(json.toString()).end();
+*/
 
+    // update the profile
+    testUser.setBio(TEST_USER_BIO);
+    vertx.createHttpClient(new HttpClientOptions().setSsl(true).setTrustAll(true))
+      .post(8080, "localhost", "/api/user")
+      .putHeader("content-type", "application/json")
+      .putHeader("content-length", length)
+      .putHeader("Authentication", "Token " + testUser.getToken())
+      .handler(response -> {
+        testContext.assertEquals(response.statusCode(), 200);
+        testContext.assertTrue(response.headers().get("content-type").contains("application/json"));
+        response.bodyHandler(body -> {
+          User userResult = new User(body.toJsonObject().getJsonObject("user"));
+          assertEquals(TEST_USER_BIO, userResult.getBio());
+          async.complete();
+        });
+      }).write(testUser.toJson().toString());
   }
 
   @Test
-  public void testInvalidLogin(TestContext testContext) {
+  public void testJWTAuthenticationForUpdateProfile(TestContext testContext) {
+
     Async async = testContext.async();
 
-    JsonObject json = new TestUser("wrongemail@domain.com", "password").toLoginJson();
-    final String length = String.valueOf(json.toString().length());
+    // update the profile
+    testUser = new User("username", "email@domain.com", "password");
+    testUser.setBio(TEST_USER_BIO);
 
-    vertx.createHttpClient(new HttpClientOptions()
-      .setSsl(true).setTrustAll(true)).post(8080, "localhost", "/api/users/login")
+    vertx.createHttpClient(new HttpClientOptions().setSsl(true).setTrustAll(true))
+      .post(8080, "localhost", "/api/user")
       .putHeader("content-type", "application/json")
-      .putHeader("content-length", length)
+      .putHeader("content-length", String.valueOf(testUser.toJson().toString().length()))
       .handler(response -> {
-        //make sure that we return the appropriate HTTP response code
-        testContext.assertFalse(response.statusCode() == 200);
-        testContext.assertEquals(response.statusCode(), 422);
+        testContext.assertEquals(response.statusCode(), 401);
         testContext.assertTrue(response.headers().get("content-type").contains("application/json"));
         response.bodyHandler(body -> {
-          testContext.assertNotNull(body);
-          final LoginError loginError = Json.decodeValue(body.toString(), LoginError.class);
-          System.out.println("Returned value: " + loginError.toJson());
-          testContext.assertEquals(loginError.getMessage(), ErrorMessages.AUTHENTICATION_ERROR_LOGIN);
+          User userResult = new User(body.toJsonObject().getJsonObject("user"));
+          assertEquals(TEST_USER_BIO, userResult.getBio());
+          async.complete();
         });
-        async.complete();
-      }).write(json.toString()).end();
+      }).write(testUser.toJson().toString());
 
   }
 
