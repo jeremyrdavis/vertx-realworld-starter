@@ -177,7 +177,7 @@ public class MainVerticle extends AbstractVerticle {
               routingContext.response()
                 .setStatusCode(201)
                 .putHeader("content-type", "application/json; charset=utf-8")
-                .end(Json.encodePrettily(user));
+                .end(Json.encodePrettily(user.toJson()));
             }else{
               routingContext.response()
                 .setStatusCode(422)

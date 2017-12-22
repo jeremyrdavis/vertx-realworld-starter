@@ -87,11 +87,14 @@ public class RegisterUserTest {
           tc.assertEquals(response.statusCode(), 201);
           tc.assertTrue(response.headers().get("content-type").contains("application/json"));
           response.bodyHandler(body -> {
-            final User userResult = Json.decodeValue(body.toString(), User.class);
+            final User userResult = new User(body.toJsonObject().getJsonObject("user"));
             System.out.println(userResult.toJson().toString());
             tc.assertEquals("username", userResult.getUsername());
             tc.assertEquals("user@domain.com", userResult.getEmail());
-            tc.assertNotNull(userResult.get_id());
+            tc.assertNotNull("token");
+            tc.assertNotNull("bio");
+            tc.assertNotNull("image");
+            tc.assertNull(userResult.get_id());
             async.complete();
           });
       }).write(user.toJson().toString()).end();
