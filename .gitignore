@@ -14,3 +14,4 @@ buildNumber.properties
 # Editor stuff
 .editorconfig
 *.iml
+.idea/
