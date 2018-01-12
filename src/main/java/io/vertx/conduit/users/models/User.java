@@ -61,8 +61,13 @@ public class User {
   public JsonObject toJson() {
     JsonObject json = new JsonObject()
       .put("username", username)
-      .put("email", email)
-      .put("token", token);
+      .put("email", email);
+    if(!(this.token == null || this.token.isEmpty())){
+      json.put("token", token);
+    }
+    if(!(this.bio == null || this.bio.isEmpty())){
+      json.put("bio", this.bio);
+    }
     JsonObject retVal = new JsonObject();
     retVal.put("user", json);
     return retVal;

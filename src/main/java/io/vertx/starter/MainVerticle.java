@@ -69,10 +69,10 @@ public class MainVerticle extends AbstractVerticle {
     apiRouter.post("/users/login").handler(this::loginUser);
 
     apiRouter.route().handler(JWTAuthHandler.create(jwtAuth, "/api/users/login"));
-
     // following routes will be protected
     apiRouter.get("/user").handler(this::getCurrentUser);
     apiRouter.post("/user").handler(this::updateUser);
+
     baseRouter.mountSubRouter("/api", apiRouter);
 
     vertx.createHttpServer(new HttpServerOptions()
@@ -92,11 +92,21 @@ public class MainVerticle extends AbstractVerticle {
 
     JsonObject body = routingContext.getBodyAsJson();
     final User userToUpdate = Json.decodeValue(routingContext.getBodyAsJson().getJsonObject("user").toString(), User.class);
-    routingContext.response()
-      .setStatusCode(200)
-      .putHeader("Content-Type", "application/json; charset=utf-8")
-      //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
-      .end(Json.encodePrettily(userToUpdate.toJson()));
+
+    mongoClient.findOneAndUpdate(MongoConstants.COLLECTION_NAME_USERS,new JsonObject().put("email", userToUpdate.getEmail()), userToUpdate.toMongoJson(), r -> {
+      if (r.succeeded()) {
+//        User updatedUser = new User(r.result());
+        routingContext.response()
+          .setStatusCode(201)
+          .putHeader("content-type", "application/json; charset=utf-8")
+          .end(Json.encodePrettily(userToUpdate.toJson()));
+      } else {
+        routingContext.response()
+          .setStatusCode(422)
+          .putHeader("content-type", "application/json; charset=utf-8")
+          .end(Json.encodePrettily(new RegistrationError(r.cause().getMessage())));
+      }
+    });
 
   }
 

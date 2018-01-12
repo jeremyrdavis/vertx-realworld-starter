@@ -1,7 +1,5 @@
-package io.vertx.conduit.users;
+package io.vertx.conduit.users.models;
 
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodProcess;
 import de.flapdoodle.embed.mongo.MongodStarter;
@@ -10,31 +8,29 @@ import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.runtime.Network;
-import io.vertx.conduit.users.models.MongoConstants;
-import io.vertx.conduit.users.models.TestUser;
-import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTOptions;
-import io.vertx.ext.auth.mongo.MongoAuth;
-import io.vertx.ext.mongo.MongoClient;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.starter.MainVerticle;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 @RunWith(VertxUnitRunner.class)
-public class ProfileTest {
+public class AnotherProfileTest {
 
   private static final String TEST_USER_BIO = "This is my bio.";
 
@@ -46,16 +42,11 @@ public class ProfileTest {
 
   private User testUser;
 
-  String validToken;
+  String validToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1MTU3MDM3OTIsImV4cCI6MTUxNTcwNzM5Mn0.46uFDkq_hFALgBzcueNY5EOrcUY6lnvpV6Sx_KD8sDk";
 
-  /**
-   * Setup the embedded MongoDB once before any tests are run
-   *
-   * @throws IOException
-   */
+
   @BeforeClass
-  public static void initialize() throws IOException {
-
+  public static void initialize() throws IOException{
     // Database stuff
     MongodStarter starter = MongodStarter.getDefaultInstance();
     IMongodConfig mongodConfig = new MongodConfigBuilder()
@@ -64,10 +55,11 @@ public class ProfileTest {
       .build();
     MongodExecutable mongodExecutable = starter.prepare(mongodConfig);
     MONGO = mongodExecutable.start();
+
   }
 
   @Before
-  public void setUp(TestContext tc) {
+  public void setUp(TestContext tc){
     vertx = Vertx.vertx();
 
     DeploymentOptions options = new DeploymentOptions()
@@ -79,87 +71,21 @@ public class ProfileTest {
 
     vertx.deployVerticle(MainVerticle.class.getName(), options, tc.asyncAssertSuccess());
 
-    MongoClient mongoClient = io.vertx.ext.mongo.MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:12345"));
-
-    testUser = new User("username","email@domain.com","password");
-
-    Async async1 = tc.async();
-    Async async2 = tc.async();
-
-    MongoAuth loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
-    loginAuthProvider.setUsernameField("email");
-
-    mongoClient.dropCollection(MongoConstants.COLLECTION_NAME_USERS, r->{
-      if (!r.succeeded()) {
-        fail("Failure deleting the collection " + MongoConstants.COLLECTION_NAME_USERS);
-      }
-    });
-    mongoClient.dropCollection(MongoAuth.DEFAULT_COLLECTION_NAME, r->{
-      if (!r.succeeded()) {
-        fail("Failure deleting the collection " + MongoAuth.DEFAULT_COLLECTION_NAME);
-      }
-    });
-
-    loginAuthProvider.insertUser(testUser.getEmail(), testUser.getPassword(), null, null, res ->{
-      if (res.succeeded()) {
-        mongoClient.insert(MongoConstants.COLLECTION_NAME_USERS, testUser.toMongoJson(), r-> {
-          if (r.succeeded()) {
-            async2.complete();
-          }else{
-            fail("Error inserting test user");
-          }
-        });
-        async1.complete();
-      }else{
-        async1.complete();
-        fail();
-      }
-    });
-
     JWTAuth jwtAuth = JWTAuth.create(vertx, new JsonObject().put("keyStore", new JsonObject()
       .put("type", "jceks")
       .put("path", "keystore.jceks")
       .put("password", "secret")));
+    Calendar cal = Calendar.getInstance();
+    cal.add(Calendar.DAY_OF_YEAR, 7);
 
-    testUser.setToken(jwtAuth.generateToken(new JsonObject().put("sub", testUser.getEmail()), new JWTOptions()));
-    validToken = jwtAuth.generateToken(new JsonObject().put("sub", testUser.getEmail()), new JWTOptions());
+    testUser = new User("username","email@domain.com","password");
 
-  }
-  @After
-  public void tearDown(TestContext tc) {
-    vertx.close(tc.asyncAssertSuccess());
-  }
+    validToken = jwtAuth.generateToken(new JsonObject().put("sub", testUser.getEmail()).put("exp", cal.getTimeInMillis()), new JWTOptions());
 
-  @AfterClass
-  public static void shutdown() {  MONGO.stop(); }
-
-  @Test
-  public void testUpdatingUserAddingBioOnly(TestContext testContext) {
-    Async async = testContext.async();
-
-    // update the profile
-    testUser.setBio(TEST_USER_BIO);
-
-    // post the updated user
-    vertx.createHttpClient(new HttpClientOptions().setSsl(true).setTrustAll(true))
-      .post(8080, "localhost", "/api/user")
-      .putHeader("content-type", "application/json")
-      .putHeader("content-length", String.valueOf(testUser.toJson().toString().length()))
-      .putHeader("Authentication", "Bearer " + validToken)
-      .handler(response -> {
-        testContext.assertEquals(response.statusCode(), 200);
-        testContext.assertTrue(response.headers().get("content-type").contains("application/json"));
-        response.bodyHandler(body -> {
-          User userResult = new User(body.toJsonObject().getJsonObject("user"));
-          assertEquals(TEST_USER_BIO, userResult.getBio());
-          async.complete();
-        });
-      }).write(testUser.toJson().toString());
   }
 
   @Test
-  public void testJWTAuthenticationForUpdateProfile(TestContext testContext) {
-
+  public void testAuthenticationWorksWhenUpdatingBio(TestContext testContext) {
     Async async = testContext.async();
 
     // update the profile
@@ -170,6 +96,7 @@ public class ProfileTest {
       .post(8080, "localhost", "/api/user")
       .putHeader("content-type", "application/json")
       .putHeader("content-length", String.valueOf(testUser.toJson().toString().length()))
+      .putHeader("Authorization", "Bearer " + validToken)
       .handler(response -> {
         testContext.assertEquals(response.statusCode(), 401);
         testContext.assertTrue(response.headers().get("content-type").contains("application/json"));
@@ -182,5 +109,28 @@ public class ProfileTest {
 
   }
 
+  @Test
+  public void testAuthenticationKeepsOutInvalidUpdates(TestContext testContext) {
+    Async async = testContext.async();
 
+    // update the profile
+    testUser = new User("username", "email@domain.com", "password");
+    testUser.setBio(TEST_USER_BIO);
+
+    vertx.createHttpClient(new HttpClientOptions().setSsl(true).setTrustAll(true))
+      .post(8080, "localhost", "/api/user")
+      .putHeader("content-type", "application/json")
+      .putHeader("content-length", String.valueOf(testUser.toJson().toString().length()))
+      .putHeader("Authorization", "Bearer foo")
+      .handler(response -> {
+        testContext.assertEquals(response.statusCode(), 401);
+        testContext.assertTrue(response.headers().get("content-type").contains("application/json"));
+        response.bodyHandler(body -> {
+          User userResult = new User(body.toJsonObject().getJsonObject("user"));
+          assertEquals(TEST_USER_BIO, userResult.getBio());
+          async.complete();
+        });
+      }).write(testUser.toJson().toString());
+
+  }
 }
