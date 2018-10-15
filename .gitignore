@@ -11,6 +11,14 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 
+data/
+
 # Editor stuff
 .editorconfig
+.classpath
+.project
 *.iml
+*.settings
+.idea/
+.project/
+
