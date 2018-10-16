@@ -3,11 +3,8 @@ package io.vertx.conduit.users;
 import io.vertx.conduit.DBSetupVerticle;
 import io.vertx.conduit.HttpVerticle;
 import io.vertx.conduit.MongoVerticle;
-import io.vertx.conduit.users.models.TestUser;
-import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -20,7 +17,6 @@ import org.junit.runner.RunWith;
 
 import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
-import static io.vertx.core.json.Json.*;
 
 @RunWith(VertxUnitRunner.class)
 public class LoginUserTest {

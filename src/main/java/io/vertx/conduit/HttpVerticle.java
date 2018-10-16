@@ -84,15 +84,20 @@ public class HttpVerticle extends AbstractVerticle {
 
     JsonObject message = new JsonObject()
       .put(MESSAGE_ACTION, MESSAGE_ACTION_REGISTER)
-      .put("user", routingContext.getBodyAsJson().getJsonObject("user"));
+      .put(MESSAGE_VALUE_USER, routingContext.getBodyAsJson().getJsonObject("user"));
 
     System.out.println(message.getJsonObject("user"));
     vertx.eventBus().send(MESSAGE_ADDRESS, message, ar->{
       if (ar.succeeded()) {
+        JsonObject userJson = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
+        final User returnedUser = new User(userJson);
+        // get the JWT Token
+        returnedUser.setToken(jwtAuth.generateToken(new JsonObject().put("email", user.getEmail()).put("password", user.getPassword()), new JWTOptions().setIgnoreExpiration(true)));
         routingContext.response()
           .setStatusCode(201)
-          .putHeader("content-type", "application/json; charset=utf-8")
-          .end(Json.encodePrettily(user));
+          .putHeader("Content-Type", "application/json; charset=utf-8")
+          //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+          .end(Json.encodePrettily(returnedUser.toConduitJson()));
       }else{
         routingContext.response()
           .setStatusCode(422)

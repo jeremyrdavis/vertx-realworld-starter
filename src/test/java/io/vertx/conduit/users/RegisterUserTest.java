@@ -63,10 +63,25 @@ public class RegisterUserTest {
                                 .put("username", "User2")
                                 .put("email", "user2@user2.user2")
                                 .put("password", "user2user2")
-                        ), ar ->{
-                    Assert.assertEquals(201, ar.result().statusCode());
-                    async.complete();
+                        ), ar -> {
+                    if (ar.succeeded()) {
+                        tc.assertEquals(201, ar.result().statusCode());
+                        System.out.println("returned: " + ar.result().bodyAsJsonObject());
+                        JsonObject returnedJson = ar.result().bodyAsJsonObject();
+                        tc.assertNotNull(returnedJson);
+                        JsonObject returnedUser = returnedJson.getJsonObject("user");
+                        tc.assertEquals("User2", returnedUser.getString("username"), "Username should be 'User2");
+                        tc.assertEquals("user2@user2.user2", returnedUser.getString("email"), "Email should be 'user2@user2.user2");
+                        tc.assertNull(returnedUser.getString("bio"), "Bio should be null/empty");
+                        tc.assertNull(returnedUser.getString("image"), "image should be null/empty");
+                        tc.assertNotNull(returnedUser.getString("token", "Token should not be null/empty"));
+                        async.complete();
+                    }else{
+                        tc.fail(ar.cause());
+                    }
+
                 });
+
     }
 
 }

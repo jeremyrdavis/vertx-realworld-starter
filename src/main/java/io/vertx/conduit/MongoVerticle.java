@@ -1,6 +1,7 @@
 package io.vertx.conduit;
 
 import io.vertx.conduit.users.models.MongoConstants;
+import io.vertx.conduit.users.models.User;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.eventbus.EventBus;
@@ -109,9 +110,48 @@ public class MongoVerticle extends AbstractVerticle{
   }
 
   private void registerUser(Message<JsonObject> message) {
-    message.reply(new JsonObject()
-      .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
-      .put(MESSAGE_RESPONSE_DETAILS, "Unimplemented"));
+
+    final User userToRegister = new User(message.body().getJsonObject(MESSAGE_VALUE_USER));
+
+    registerUser(userToRegister).setHandler(ar -> {
+
+      if (ar.succeeded()) {
+        message.reply(new JsonObject()
+          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
+          .put(MESSAGE_RESPONSE_DETAILS, userToRegister.toJson()));
+      }else{
+        message.reply(new JsonObject()
+          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
+          .put(MESSAGE_RESPONSE_DETAILS, ar.cause()));
+      }
+    });
+
   }
+
+  private Future<User> registerUser(User user) {
+
+    Future<User> retVal = Future.future();
+
+    loginAuthProvider.insertUser(user.getUsername(), user.getPassword(), null, null, ar -> {
+      if (ar.succeeded()) {
+        // the rest of the User
+        JsonObject query = new JsonObject().put("username", user.getUsername());
+        JsonObject update = new JsonObject()
+          .put("$set", new JsonObject().put("email", user.getEmail()).put("bio", user.getBio()).put("image", user.getImage()));
+        mongoClient.updateCollection(MongoConstants.COLLECTION_NAME_USERS, query, update, res -> {
+          if (res.succeeded()) {
+            retVal.complete(user);
+          } else {
+            retVal.fail(res.cause());
+          }
+        });
+      }else{
+        retVal.fail(ar.cause());
+      }
+    });
+
+    return retVal;
+  }
+
 
 }

@@ -85,9 +85,11 @@ public class User {
 
   public JsonObject toJson() {
     return new JsonObject()
-            .put("username", username)
             .put("email", email)
-            .put("token", token);
+            .put("token", token)
+            .put("username", username)
+            .put("bio", bio)
+            .put("image", image);
   }
 
   public JsonObject toMongoJson(){
@@ -149,6 +151,9 @@ public class User {
   }
 
   public String getImage() {
+    if (image == null) {
+      return "";
+    }
     return image;
   }
 
