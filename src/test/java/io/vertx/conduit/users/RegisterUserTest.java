@@ -17,6 +17,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.starter.DBSetupVerticle;
 import io.vertx.starter.MainVerticle;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -31,13 +32,14 @@ public class RegisterUserTest {
   // MongoDB stuff
   private static MongodProcess MONGO;
 
-  private static int MONGO_PORT = 12345;
+  private static int MONGO_PORT = 27017;
 
   /**
    * Setup the embedded MongoDB once before any tests are run and insert data
    *
    * @throws IOException
    */
+/*
   @BeforeClass
   public static void initialize() throws IOException {
     MongodStarter starter = MongodStarter.getDefaultInstance();
@@ -48,6 +50,7 @@ public class RegisterUserTest {
     MongodExecutable mongodExecutable = starter.prepare(mongodConfig);
     MONGO = mongodExecutable.start();
   }
+*/
 
 
   @Before
@@ -61,7 +64,14 @@ public class RegisterUserTest {
         .put("connection_string", "mongodb://localhost:" + MONGO_PORT)
       );
 
-    vertx.deployVerticle(MainVerticle.class.getName(), options, tc.asyncAssertSuccess());
+    vertx.deployVerticle(new DBSetupVerticle(), ar -> {
+      if (ar.succeeded()) {
+        vertx.deployVerticle(MainVerticle.class.getName(), options, tc.asyncAssertSuccess());
+      }else{
+        tc.fail(ar.cause());
+      }
+    });
+
   }
 
   @After
@@ -79,8 +89,7 @@ public class RegisterUserTest {
     User user = new User("username", "user@domain.com", "password");
     final String length = String.valueOf(user.toJson().toString().length());
 
-    vertx.createHttpClient(new HttpClientOptions()
-      .setSsl(true).setTrustAll(true)).post(8080, "localhost", "/api/users")
+    vertx.createHttpClient().post(8080, "localhost", "/api/users")
       .putHeader("content-type", "application/json")
       .putHeader("content-length", length)
       .handler(response -> {
