@@ -11,7 +11,7 @@
 
   <properties>
     <vertx.version>3.5.2</vertx.version>
-    <main.verticle>io.vertx.starter.MainVerticle</main.verticle>
+    <main.verticle>io.vertx.conduit.MainVerticle</main.verticle>
   </properties>
 
   <dependencyManagement>

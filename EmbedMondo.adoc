@@ -1,17 +1,23 @@
 package io.vertx.conduit.users;
 
+import de.flapdoodle.embed.mongo.MongodProcess;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.conduit.DBSetupVerticle;
+import io.vertx.conduit.HttpVerticle;
 import io.vertx.conduit.MainVerticle;
+import io.vertx.conduit.MongoVerticle;
 import org.junit.*;
 import org.junit.runner.RunWith;
+
+import java.io.IOException;
 
 import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
@@ -19,8 +25,35 @@ import static io.vertx.conduit.TestProps.DB_NAME_TEST;
 @RunWith(VertxUnitRunner.class)
 public class RegisterUserTest {
 
+    // MongoDB stuff
+    private static MongodProcess MONGO;
+    private static int MONGO_PORT = 27017;
     private Vertx vertx;
 
+/*
+    @AfterClass
+    public static void shutdown() {
+        MONGO.stop();
+    }
+*/
+
+    /**
+     * Setup the embedded MongoDB once before any tests are run and insert data
+     *
+     * @throws IOException
+     */
+/*
+  @BeforeClass
+  public static void initialize() throws IOException {
+    MongodStarter starter = MongodStarter.getDefaultInstance();
+    IMongodConfig mongodConfig = new MongodConfigBuilder()
+      .version(Version.Main.PRODUCTION)
+      .net(new Net("localhost", MONGO_PORT, Network.localhostIsIPv6()))
+      .build();
+    MongodExecutable mongodExecutable = starter.prepare(mongodConfig);
+    MONGO = mongodExecutable.start();
+  }
+*/
     @Before
     public void setUp(TestContext tc) {
         vertx = Vertx.vertx();

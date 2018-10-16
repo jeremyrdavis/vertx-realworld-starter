@@ -1,4 +1,4 @@
-package io.vertx.starter;
+package io.vertx.conduit;
 
 import io.vertx.conduit.errors.AuthenticationError;
 import io.vertx.conduit.errors.ErrorMessages;
@@ -15,7 +15,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 
-import static io.vertx.starter.MongoVerticle.*;
+import static io.vertx.conduit.MongoVerticle.*;
 
 public class HttpVerticle extends AbstractVerticle {
 

@@ -1,9 +1,7 @@
-package io.vertx.starter;
+package io.vertx.conduit;
 
-import io.vertx.core.DeploymentOptions;
+import io.vertx.conduit.MainVerticle;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
