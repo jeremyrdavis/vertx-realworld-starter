@@ -150,14 +150,15 @@ public class HttpVerticle extends AbstractVerticle {
         vertx.eventBus().send(MESSAGE_ADDRESS, message2, ar2 ->{
           if (ar2.succeeded()) {
             System.out.println(MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL + "succeeded");
-            final User returnedUser = Json.decodeValue(ar2.result().body().toString(), User.class);
+            JsonObject userJson = ((JsonObject) ar2.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
+            final User returnedUser = new User(userJson);
             // get the JWT Token
             returnedUser.setToken(jwtAuth.generateToken(authInfo, new JWTOptions().setIgnoreExpiration(true)));
             routingContext.response()
               .setStatusCode(200)
               .putHeader("Content-Type", "application/json; charset=utf-8")
               //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
-              .end(Json.encodePrettily(returnedUser.toJson()));
+              .end(Json.encodePrettily(returnedUser.toConduitJson()));
           }else{
             System.out.println("Did Not Find User");
             routingContext.response().setStatusCode(422)

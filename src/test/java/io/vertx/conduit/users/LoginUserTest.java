@@ -1,17 +1,18 @@
 package io.vertx.conduit.users;
 
+import io.vertx.conduit.DBSetupVerticle;
 import io.vertx.conduit.HttpVerticle;
 import io.vertx.conduit.MongoVerticle;
-import io.vertx.conduit.users.models.MongoConstants;
 import io.vertx.conduit.users.models.TestUser;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.ext.web.client.WebClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,7 +20,7 @@ import org.junit.runner.RunWith;
 
 import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
-import static org.junit.Assert.fail;
+import static io.vertx.core.json.Json.*;
 
 @RunWith(VertxUnitRunner.class)
 public class LoginUserTest {
@@ -37,49 +38,9 @@ public class LoginUserTest {
                         .put("connection_string", DB_CONNECTION_STRING_TEST)
                 );
 
+        vertx.deployVerticle(DBSetupVerticle.class.getName(), tc.asyncAssertSuccess());
         vertx.deployVerticle(HttpVerticle.class.getName(), options, tc.asyncAssertSuccess());
         vertx.deployVerticle(MongoVerticle.class.getName(), options, tc.asyncAssertSuccess());
-
-        io.vertx.ext.mongo.MongoClient mongoClient = io.vertx.ext.mongo.MongoClient.createShared(vertx, new JsonObject().put("db_name", DB_NAME_TEST).put("connection_string", DB_CONNECTION_STRING_TEST));
-
-        User testUser = new User("username", "email@domain.com", "password");
-
-        Async dropUsersCollectionAsync = tc.async();
-        Async dropDefaultCollectionAsync = tc.async();
-        Async insertUserAsync = tc.async();
-
-        MongoAuth loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
-        loginAuthProvider.setUsernameField("email");
-
-        mongoClient.dropCollection(MongoConstants.COLLECTION_NAME_USERS, r -> {
-            if (!r.succeeded()) {
-                fail("Failure deleting the collection " + MongoConstants.COLLECTION_NAME_USERS);
-            }
-            dropUsersCollectionAsync.complete();
-        });
-        mongoClient.dropCollection(MongoAuth.DEFAULT_COLLECTION_NAME, r -> {
-            if (!r.succeeded()) {
-                fail("Failure deleting the collection " + MongoAuth.DEFAULT_COLLECTION_NAME);
-            }
-            dropDefaultCollectionAsync.complete();
-        });
-
-        loginAuthProvider.insertUser(testUser.getEmail(), testUser.getPassword(), null, null, res -> {
-            if (res.succeeded()) {
-                System.out.println("inserted " + res.result());
-                mongoClient.insert(MongoConstants.COLLECTION_NAME_USERS, testUser.toMongoJson(), r -> {
-                    if (r.succeeded()) {
-                        System.out.println("insert success");
-                    } else {
-                        fail("Error inserting test user: " + r.cause());
-                    }
-                });
-                insertUserAsync.complete();
-            } else {
-                fail();
-                insertUserAsync.complete();
-            }
-        });
 
     }
 
@@ -124,11 +85,35 @@ public class LoginUserTest {
 
     @Test
     public void testLoggingIn(TestContext testContext) {
+
         Async async = testContext.async();
 
-        JsonObject json = new TestUser("email@domain.com", "password").toLoginJson();
-        final String length = String.valueOf(json.toString().length());
+        WebClient webClient = WebClient.create(vertx);
 
+        webClient.post(8080, "localhost", "/api/users/login")
+                .sendJsonObject(new JsonObject()
+                        .put("user", new JsonObject()
+                        .put("username", "Jacob")
+                        .put("email", "jake@jake.jake")
+                        .put("password", "jakejake")
+                    ), ar -> {
+                    if (ar.succeeded()) {
+                        testContext.assertEquals(200, ar.result().statusCode());
+                        System.out.println(ar.result().bodyAsJsonObject());
+                        JsonObject returnedJson = ar.result().bodyAsJsonObject();
+                        testContext.assertNotNull(returnedJson);
+                        JsonObject returnedUser = returnedJson.getJsonObject("user");
+                        testContext.assertEquals("Jacob", returnedUser.getString("username"));
+                        testContext.assertEquals("jake@jake.jake", returnedUser.getString("email"));
+                        testContext.assertEquals("I work at state farm", returnedUser.getString("bio"));
+                        async.complete();
+                    }else{
+                        testContext.fail(ar.cause());
+                    }
+
+                });
+
+/*
         vertx.createHttpClient()
                 .post(8080, "localhost", "/api/users/login")
                 .putHeader("content-type", "application/json")
@@ -153,6 +138,7 @@ public class LoginUserTest {
                         async.complete();
                     });
                 }).write(json.toString()).end();
+*/
 
     }
 

@@ -1,5 +1,6 @@
 package io.vertx.conduit;
 
+import io.vertx.conduit.users.models.MongoConstants;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.eventbus.EventBus;
@@ -70,11 +71,21 @@ public class MongoVerticle extends AbstractVerticle{
   }
 
   private void lookupUserByEmail(Message<JsonObject> message) {
-    message.reply(new JsonObject()
-      .put("email", "email@domain.com")
-      .put("username", "user1")
-      .put("bio", "i am a user")
-      .put("image", ""));
+
+    JsonObject query = new JsonObject()
+      .put("email", message.body().getString(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE));
+
+    mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, res -> {
+      if (res.succeeded()) {
+        message.reply(new JsonObject()
+          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
+          .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
+      } else{
+        message.reply(new JsonObject()
+          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
+          .put(MESSAGE_RESPONSE_DETAILS, res.cause().getMessage()));
+      }
+    });
   }
 
   private void loginUser(Message<JsonObject> message) {

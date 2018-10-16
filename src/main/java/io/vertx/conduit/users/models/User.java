@@ -21,6 +21,8 @@ public class User {
 
   String password;
 
+  String salt;
+
   String token;
 
   String bio;
@@ -48,6 +50,17 @@ public class User {
     this.token = token;
   }
 
+  public User(String _id, String username, String email, String password, String salt, String token, String bio, String image) {
+    this._id = _id;
+    this.username = username;
+    this.email = email;
+    this.password = password;
+    this.salt = salt;
+    this.token = token;
+    this.bio = bio;
+    this.image = image;
+  }
+
   public User(JsonObject jsonObject){
 
     if(jsonObject.containsKey("_id")) this._id = jsonObject.getString("_id");
@@ -55,7 +68,19 @@ public class User {
     this.email = jsonObject.getString("email");
     this.password = jsonObject.getString("password");
     if(jsonObject.containsKey("token")) this.token = jsonObject.getString("token");
+    if(jsonObject.containsKey("image")) this.image = jsonObject.getString("image");
+    if(jsonObject.containsKey("bio")) this.bio = jsonObject.getString("bio");
 
+  }
+
+  public JsonObject toConduitJson() {
+    return new JsonObject()
+            .put("user", new JsonObject()
+                  .put("email", email)
+                  .put("token", token)
+                  .put("username", username)
+                  .put("bio", bio)
+                  .put("image", image));
   }
 
   public JsonObject toJson() {
