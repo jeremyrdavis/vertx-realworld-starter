@@ -2,6 +2,7 @@ package io.vertx.starter;
 
 import io.vertx.conduit.errors.AuthenticationError;
 import io.vertx.conduit.errors.ErrorMessages;
+import io.vertx.conduit.errors.RegistrationError;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -78,10 +79,29 @@ public class HttpVerticle extends AbstractVerticle {
 
     // marshall our payload into a User object
     //final User user = Json.decodeValue(routingContext.getBodyAsString(), User.class);
-    JsonObject jsonObject = routingContext.getBodyAsJson();
-    final User user = new User(jsonObject.getJsonObject("user"));
 
+    final User user = Json.decodeValue(routingContext.getBodyAsJson().getJsonObject("user").toString(), User.class);
+
+    JsonObject message = new JsonObject()
+      .put(MESSAGE_ACTION, MESSAGE_ACTION_REGISTER)
+      .put("user", routingContext.getBodyAsJson().getJsonObject("user"));
+
+    System.out.println(message.getJsonObject("user"));
+    vertx.eventBus().send(MESSAGE_ADDRESS, message, ar->{
+      if (ar.succeeded()) {
+        routingContext.response()
+          .setStatusCode(201)
+          .putHeader("content-type", "application/json; charset=utf-8")
+          .end(Json.encodePrettily(user));
+      }else{
+        routingContext.response()
+          .setStatusCode(422)
+          .putHeader("content-type", "application/json; charset=utf-8")
+          .end(Json.encodePrettily(new RegistrationError(ar.cause().getMessage())));
+      }
+    });
     // insert into the authentication collection
+
 /*
     loginAuthProvider.insertUser(user.getEmail(), user.getPassword(), null, null, res -> {
 

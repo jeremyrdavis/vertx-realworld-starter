@@ -1,44 +1,47 @@
 package io.vertx.conduit.users;
 
-import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodProcess;
-import de.flapdoodle.embed.mongo.MongodStarter;
-import de.flapdoodle.embed.mongo.config.IMongodConfig;
-import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
-import de.flapdoodle.embed.mongo.config.Net;
-import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.process.runtime.Network;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.ext.web.client.WebClient;
 import io.vertx.starter.DBSetupVerticle;
+import io.vertx.starter.HttpVerticle;
 import io.vertx.starter.MainVerticle;
+import io.vertx.starter.MongoVerticle;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
+import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
+import static io.vertx.conduit.TestProps.DB_NAME_TEST;
+
 @RunWith(VertxUnitRunner.class)
 public class RegisterUserTest {
 
-  private Vertx vertx;
+    // MongoDB stuff
+    private static MongodProcess MONGO;
+    private static int MONGO_PORT = 27017;
+    private Vertx vertx;
 
-  // MongoDB stuff
-  private static MongodProcess MONGO;
+/*
+    @AfterClass
+    public static void shutdown() {
+        MONGO.stop();
+    }
+*/
 
-  private static int MONGO_PORT = 27017;
-
-  /**
-   * Setup the embedded MongoDB once before any tests are run and insert data
-   *
-   * @throws IOException
-   */
+    /**
+     * Setup the embedded MongoDB once before any tests are run and insert data
+     *
+     * @throws IOException
+     */
 /*
   @BeforeClass
   public static void initialize() throws IOException {
@@ -51,59 +54,52 @@ public class RegisterUserTest {
     MONGO = mongodExecutable.start();
   }
 */
+    @Before
+    public void setUp(TestContext tc) {
+        vertx = Vertx.vertx();
 
+        DeploymentOptions options = new DeploymentOptions()
+                .setConfig(new JsonObject()
+                        .put("http.port", 8080)
+                        .put("db_name", DB_NAME_TEST)
+                        .put("connection_string", DB_CONNECTION_STRING_TEST)
+                );
 
-  @Before
-  public void setUp(TestContext tc) {
-    vertx = Vertx.vertx();
+        vertx.deployVerticle(new DBSetupVerticle(), ar -> {
+            if (ar.succeeded()) {
+                System.out.println("DBSetupVerticle complete");
+                vertx.deployVerticle(MainVerticle.class.getName(), options, tc.asyncAssertSuccess());
+            } else {
+                tc.fail(ar.cause());
+            }
+        });
 
-    DeploymentOptions options = new DeploymentOptions()
-      .setConfig(new JsonObject()
-        .put("http.port", 8080)
-        .put("db_name", "conduit")
-        .put("connection_string", "mongodb://localhost:" + MONGO_PORT)
-      );
+    }
 
-    vertx.deployVerticle(new DBSetupVerticle(), ar -> {
-      if (ar.succeeded()) {
-        vertx.deployVerticle(MainVerticle.class.getName(), options, tc.asyncAssertSuccess());
-      }else{
-        tc.fail(ar.cause());
-      }
-    });
+    @After
+    public void tearDown(TestContext tc) {
+        vertx.close(tc.asyncAssertSuccess());
+    }
 
-  }
+    @Test
+    public void testRegisteringAUser(TestContext tc) {
+        Async async = tc.async();
 
-  @After
-  public void tearDown(TestContext tc) {
-    vertx.close(tc.asyncAssertSuccess());
-  }
+        User user = new User("username", "user@domain.com", "password");
+        final String length = String.valueOf(user.toJson().toString().length());
 
-  @AfterClass
-  public static void shutdown() {  MONGO.stop(); }
+        WebClient webClient = WebClient.create(vertx);
 
-  @Test
-  public void testRegisteringAUser(TestContext tc) {
-    Async async = tc.async();
-
-    User user = new User("username", "user@domain.com", "password");
-    final String length = String.valueOf(user.toJson().toString().length());
-
-    vertx.createHttpClient().post(8080, "localhost", "/api/users")
-      .putHeader("content-type", "application/json")
-      .putHeader("content-length", length)
-      .handler(response -> {
-          tc.assertEquals(response.statusCode(), 201);
-          tc.assertTrue(response.headers().get("content-type").contains("application/json"));
-          response.bodyHandler(body -> {
-            final User userResult = Json.decodeValue(body.toString(), User.class);
-            System.out.println(userResult.toJson().toString());
-            tc.assertEquals("username", userResult.getUsername());
-            tc.assertEquals("user@domain.com", userResult.getEmail());
-            tc.assertNotNull(userResult.get_id());
-            async.complete();
-          });
-      }).write(user.toJson().toString()).end();
-  }
+        webClient.post(8080, "localhost", "/api/users")
+                .sendJsonObject(new JsonObject()
+                        .put("user", new JsonObject()
+                                .put("username", "User2")
+                                .put("email", "user2@user2.user2")
+                                .put("password", "user2user2")
+                        ), ar ->{
+                    Assert.assertEquals(201, ar.result().statusCode());
+                    async.complete();
+                });
+    }
 
 }

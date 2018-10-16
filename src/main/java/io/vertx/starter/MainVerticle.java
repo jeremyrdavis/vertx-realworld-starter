@@ -34,9 +34,12 @@ public class MainVerticle extends AbstractVerticle {
 
       System.out.println("Deploying Verticles");
       System.out.println(config().getString("db_name"));
+
         vertx.deployVerticle(new HttpVerticle(), ar -> {
             System.out.println("HttpVerticle deployed");
+
           if (ar.succeeded()) {
+
               vertx.deployVerticle(new MongoVerticle(), new DeploymentOptions().setConfig(config()), ar2 ->{
                   if (ar2.succeeded()) {
                       startFuture.complete();

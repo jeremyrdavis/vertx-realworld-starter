@@ -59,13 +59,10 @@ public class User {
   }
 
   public JsonObject toJson() {
-    JsonObject json = new JsonObject()
-      .put("username", username)
-      .put("email", email)
-      .put("token", token);
-    JsonObject retVal = new JsonObject();
-    retVal.put("user", json);
-    return retVal;
+    return new JsonObject()
+            .put("username", username)
+            .put("email", email)
+            .put("token", token);
   }
 
   public JsonObject toMongoJson(){

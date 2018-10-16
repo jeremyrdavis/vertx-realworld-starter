@@ -34,7 +34,7 @@ public class MongoVerticle extends AbstractVerticle{
 
     System.out.println(config().getString("db_name"));
     // Configure the MongoClient inline.  This should be externalized into a config file
-    mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", "conduit").put("connection_string", "mongodb://localhost:27017"));
+    mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", config().getString("db_name", "conduit")).put("connection_string", config().getString( "connection_string", "mongodb://localhost:27017")));
 
     // Configure authentication with MongoDB
     loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
