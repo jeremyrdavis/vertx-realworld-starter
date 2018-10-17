@@ -64,15 +64,50 @@ public class HttpVerticle extends AbstractVerticle {
 
   private void getCurrentUser(RoutingContext routingContext) {
 
-    User user = new User();
-    user.setEmail("user@email.com");
-    user.setPassword("password");
-    user.setUsername("username");
-    // create and return our response
-    routingContext.response()
-      .setStatusCode(201)
-      .putHeader("content-type", "application/json; charset=utf-8")
-      .end(Json.encodePrettily(user));
+    String headerAuth = routingContext.request().getHeader("Authorization");
+    System.out.println("headerAuth: " + headerAuth);
+
+    String[] values = headerAuth.split(" ");
+    System.out.println("values[1]: " + values[1]);
+
+    jwtAuth.authenticate(new JsonObject()
+      .put("jwt", values[1]), res -> {
+      if (res.succeeded()) {
+        io.vertx.ext.auth.User theUser = res.result();
+        JsonObject principal = theUser.principal();
+        System.out.println("theUser: " + theUser.principal().encodePrettily());
+
+        JsonObject message2 = new JsonObject()
+          .put(MESSAGE_ACTION, MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL)
+          .put(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE, principal.getString("email"));
+
+        vertx.eventBus().send(MESSAGE_ADDRESS, message2, ar ->{
+          if (ar.succeeded()) {
+            System.out.println(MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL + "succeeded");
+            JsonObject userJson = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
+            final User returnedUser = new User(userJson);
+            // get the JWT Token
+            returnedUser.setToken(jwtAuth.generateToken(principal, new JWTOptions().setIgnoreExpiration(true)));
+            routingContext.response()
+              .setStatusCode(200)
+              .putHeader("Content-Type", "application/json; charset=utf-8")
+              //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+              .end(Json.encodePrettily(returnedUser.toConduitJson()));
+          }else{
+            System.out.println("Did Not Find User");
+            routingContext.response().setStatusCode(422)
+              .putHeader("content-type", "application/json; charset=utf-8")
+              //.putHeader("Content-Length", String.valueOf(loginError.toString().length()))
+              .end(Json.encodePrettily(new AuthenticationError(ErrorMessages.AUTHENTICATION_ERROR_DEFAULT + " " + ar.cause().getMessage())));
+          }
+        });
+
+      }else{
+        //failed!
+        System.out.println("authentication failed ");
+      }
+
+    });
   }
 
   private void registerUser(RoutingContext routingContext) {
