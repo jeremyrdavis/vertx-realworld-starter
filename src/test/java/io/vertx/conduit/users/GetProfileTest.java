@@ -62,8 +62,13 @@ public class GetProfileTest {
           testContext.assertEquals(200, ar.result().statusCode());
           JsonObject returnedJson = ar.result().bodyAsJsonObject();
           testContext.assertNotNull(returnedJson);
-          JsonObject returnedUser = returnedJson.getJsonObject("user");
+          JsonObject returnedUser = returnedJson.getJsonObject("profile");
           testContext.assertEquals("Jacob", returnedUser.getString("username"));
+          testContext.assertEquals("I work at state farm", returnedUser.getString("bio"));
+          testContext.assertTrue(returnedUser.containsKey("image"));
+          testContext.assertFalse(returnedUser.containsKey("token"));
+          testContext.assertFalse(returnedUser.containsKey("email"));
+          testContext.assertFalse(returnedUser.containsKey("password"));
           getAsync.complete();
         }
       });

@@ -81,7 +81,7 @@ public class HttpVerticle extends AbstractVerticle {
             .setStatusCode(200)
             .putHeader("Content-Type", "application/json; charset=utf-8")
             //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
-            .end(Json.encodePrettily(returnedUser.toConduitJson()));
+            .end(Json.encodePrettily(returnedUser.toProfileJson()));
         }else{
           System.out.println("Did Not Find User");
           routingContext.response().setStatusCode(422)

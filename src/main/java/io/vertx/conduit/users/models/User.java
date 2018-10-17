@@ -92,6 +92,14 @@ public class User {
             .put("image", image);
   }
 
+  public JsonObject toProfileJson(){
+    return new JsonObject()
+            .put("profile", new JsonObject()
+                    .put("username", username)
+                    .put("bio", bio)
+                    .put("image", image));
+  }
+
   public JsonObject toMongoJson(){
     return new JsonObject()
       .put("username", username)
