@@ -11,6 +11,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.ext.web.client.WebClient;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,6 +46,11 @@ public class GetProfileTest {
     vertx.deployVerticle(MongoVerticle.class.getName(), options, testContext.asyncAssertSuccess());
   }
 
+  @After
+  public void cleanUp(TestContext testContext) {
+    vertx.close(testContext.asyncAssertSuccess());
+  }
+
   @Test
   public void testGetProfile(TestContext testContext) {
     Async getAsync = testContext.async();
@@ -72,6 +78,27 @@ public class GetProfileTest {
           getAsync.complete();
         }
       });
-
   }
+
+/*
+  @Test
+  public void testGetNonExistantUser(TestContext testContext) {
+    Async getAsync = testContext.async();
+
+    webClient.get(8080, "localhost", "/api/profiles/BuddyTheElf")
+      .putHeader(HttpProps.CONTENT_TYPE, HttpProps.JSON)
+      .putHeader(HttpProps.XREQUESTEDWITH, HttpProps.XMLHTTPREQUEST)
+      .putHeader(HttpProps.AUTHORIZATION, token)
+      .send(ar ->{
+        if (ar.failed()) {
+          testContext.assertEquals(true, ar.succeeded(), "The call should have succeeded");
+          testContext.fail(ar.cause());
+          getAsync.complete();
+        }else{
+          testContext.assertEquals(404, ar.result().statusCode());
+          getAsync.complete();
+        }
+      });
+  }
+*/
 }

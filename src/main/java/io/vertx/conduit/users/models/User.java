@@ -95,6 +95,8 @@ public class User {
   public JsonObject toProfileJson(){
     return new JsonObject()
             .put("profile", new JsonObject()
+                    .put("email", email)
+                    .put("token", token)
                     .put("username", username)
                     .put("bio", bio)
                     .put("image", image));
