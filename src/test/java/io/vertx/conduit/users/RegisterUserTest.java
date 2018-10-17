@@ -1,5 +1,6 @@
 package io.vertx.conduit.users;
 
+import io.vertx.conduit.HttpProps;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
@@ -58,6 +59,8 @@ public class RegisterUserTest {
         WebClient webClient = WebClient.create(vertx);
 
         webClient.post(8080, "localhost", "/api/users")
+                .putHeader(HttpProps.CONTENT_TYPE, HttpProps.JSON)
+                .putHeader(HttpProps.XREQUESTEDWITH, HttpProps.XMLHTTPREQUEST)
                 .sendJsonObject(new JsonObject()
                         .put("user", new JsonObject()
                                 .put("username", "User2")

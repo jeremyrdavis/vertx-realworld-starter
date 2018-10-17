@@ -1,6 +1,7 @@
 package io.vertx.conduit.users;
 
 import io.vertx.conduit.DBSetupVerticle;
+import io.vertx.conduit.HttpProps;
 import io.vertx.conduit.HttpVerticle;
 import io.vertx.conduit.MongoVerticle;
 import io.vertx.core.DeploymentOptions;
@@ -87,6 +88,8 @@ public class LoginUserTest {
         WebClient webClient = WebClient.create(vertx);
 
         webClient.post(8080, "localhost", "/api/users/login")
+                .putHeader(HttpProps.CONTENT_TYPE, HttpProps.JSON)
+                .putHeader(HttpProps.XREQUESTEDWITH, HttpProps.XMLHTTPREQUEST)
                 .sendJsonObject(new JsonObject()
                         .put("user", new JsonObject()
                         .put("username", "Jacob")

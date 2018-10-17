@@ -78,6 +78,7 @@ public class MongoVerticle extends AbstractVerticle{
 
     mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, res -> {
       if (res.succeeded()) {
+        System.out.println("lookupUserByEmail for email " + message.body().getString(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE) + " result: " + res.result());
         message.reply(new JsonObject()
           .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
           .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
@@ -132,16 +133,20 @@ public class MongoVerticle extends AbstractVerticle{
 
     Future<User> retVal = Future.future();
 
-    loginAuthProvider.insertUser(user.getUsername(), user.getPassword(), null, null, ar -> {
+    System.out.println("inserting user: " + user.toConduitJson().toString());
+
+    loginAuthProvider.insertUser(user.getEmail(), user.getPassword(), null, null, ar -> {
       if (ar.succeeded()) {
         // the rest of the User
-        JsonObject query = new JsonObject().put("username", user.getUsername());
+        JsonObject query = new JsonObject().put("email", user.getEmail());
         JsonObject update = new JsonObject()
-          .put("$set", new JsonObject().put("email", user.getEmail()).put("bio", user.getBio()).put("image", user.getImage()));
+          .put("$set", new JsonObject().put("username", user.getUsername()).put("bio", user.getBio()).put("image", user.getImage()));
         mongoClient.updateCollection(MongoConstants.COLLECTION_NAME_USERS, query, update, res -> {
           if (res.succeeded()) {
+            System.out.println("updated user");
             retVal.complete(user);
           } else {
+            System.out.println("railed to update user");
             retVal.fail(res.cause());
           }
         });

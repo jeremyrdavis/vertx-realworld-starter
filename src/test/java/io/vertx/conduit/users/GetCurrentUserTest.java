@@ -1,6 +1,7 @@
 package io.vertx.conduit.users;
 
 import io.vertx.conduit.DBSetupVerticle;
+import io.vertx.conduit.HttpProps;
 import io.vertx.conduit.HttpVerticle;
 import io.vertx.conduit.MongoVerticle;
 import io.vertx.core.DeploymentOptions;
@@ -69,7 +70,9 @@ public class GetCurrentUserTest {
     Async getAsync = testContext.async();
 
     webClient.get(8080, "localhost", "/api/user")
-      .putHeader("Authorization", token)
+      .putHeader(HttpProps.CONTENT_TYPE, HttpProps.JSON)
+      .putHeader(HttpProps.XREQUESTEDWITH, HttpProps.XMLHTTPREQUEST)
+      .putHeader(HttpProps.AUTHORIZATION, token)
       .send(ar ->{
         if (ar.failed()) {
           testContext.assertEquals(true, ar.succeeded(), "The call should have succeeded");
