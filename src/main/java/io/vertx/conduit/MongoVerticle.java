@@ -19,6 +19,8 @@ public class MongoVerticle extends AbstractVerticle{
   public static final String MESSAGE_ACTION_LOGIN = "action.login";
   public static final String MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL = "persistence.lookup.user.by.email";
   public static final String MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE = "email";
+  public static final String MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME = "persistence.lookup.user.by.username";
+  public static final String MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE = "username";
   public static final String MESSAGE_RESPONSE = "response";
   public static final String MESSAGE_RESPONSE_SUCCESS = "success";
   public static final String MESSAGE_RESPONSE_FAILURE = "failure";
@@ -63,12 +65,33 @@ public class MongoVerticle extends AbstractVerticle{
         case MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL:
           lookupUserByEmail(message);
           break;
+        case MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME:
+          lookupUserByUsername(message);
+          break;
         default:
           message.fail(1, "Unkown action: " + message.body());
       }
     });
 
     startFuture.complete();
+  }
+
+  private void lookupUserByUsername(Message<JsonObject> message) {
+    JsonObject query = new JsonObject()
+      .put("username", message.body().getString(MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE));
+
+    mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, res -> {
+      if (res.succeeded()) {
+        System.out.println("lookupUserByUsername for username " + message.body().getString(MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE) + " result: " + res.result());
+        message.reply(new JsonObject()
+          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
+          .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
+      } else{
+        message.reply(new JsonObject()
+          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
+          .put(MESSAGE_RESPONSE_DETAILS, res.cause().getMessage()));
+      }
+    });
   }
 
   private void lookupUserByEmail(Message<JsonObject> message) {

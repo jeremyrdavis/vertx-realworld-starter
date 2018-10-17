@@ -19,18 +19,19 @@ import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
 
 @RunWith(VertxUnitRunner.class)
-public class GetCurrentUserTest {
+public class GetProfileTest {
 
-  private Vertx vertx;
+  Vertx vertx;
 
   private WebClient webClient;
 
   String token = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6Impha2VAamFrZS5qYWtlIiwicGFzc3dvcmQiOiJqYWtlamFrZSIsImlhdCI6MTUzOTczNTQwM30.YBhmIStiM_909UNGWYo3kQk_K6no2yp2VQONlQzXpPk";
 
   @Before
-  public void setUp(TestContext testContext) {
-
+  public void setUp(TestContext testContext){
     vertx = Vertx.vertx();
+
+    webClient = WebClient.create(vertx);
 
     DeploymentOptions options = new DeploymentOptions()
       .setConfig(new JsonObject()
@@ -42,34 +43,13 @@ public class GetCurrentUserTest {
     vertx.deployVerticle(DBSetupVerticle.class.getName(), testContext.asyncAssertSuccess());
     vertx.deployVerticle(HttpVerticle.class.getName(), options, testContext.asyncAssertSuccess());
     vertx.deployVerticle(MongoVerticle.class.getName(), options, testContext.asyncAssertSuccess());
-
-    webClient = WebClient.create(vertx);
-
-/*
-    webClient.get(8080, "localhost", "/api/user")
-      .putHeader("Authorization", token)
-      .sendJsonObject(new JsonObject()
-        .put("user", new JsonObject()
-          .put("username", "Jacob")
-          .put("email", "jake@jake.jake")
-          .put("password", "jakejake")
-        ), ar -> {
-          if (ar.succeeded()) {
-            loginAsync.complete();
-          }else{
-            testContext.fail(ar.cause());
-            loginAsync.complete();
-          }
-        });
-*/
   }
 
   @Test
-  public void testGetCurrentUser(TestContext testContext){
-
+  public void testGetProfile(TestContext testContext) {
     Async getAsync = testContext.async();
 
-    webClient.get(8080, "localhost", "/api/user")
+    webClient.get(8080, "localhost", "/api/profiles/Jacob")
       .putHeader(HttpProps.CONTENT_TYPE, HttpProps.JSON)
       .putHeader(HttpProps.XREQUESTEDWITH, HttpProps.XMLHTTPREQUEST)
       .putHeader(HttpProps.AUTHORIZATION, token)
@@ -84,9 +64,6 @@ public class GetCurrentUserTest {
           testContext.assertNotNull(returnedJson);
           JsonObject returnedUser = returnedJson.getJsonObject("user");
           testContext.assertEquals("Jacob", returnedUser.getString("username"));
-          testContext.assertEquals("user2@user2.user2", returnedUser.getString("email"), "Email should be 'user2@user2.user2");
-          testContext.assertNull(returnedUser.getString("bio"), "Bio should be null/empty");
-          testContext.assertNull(returnedUser.getString("image"), "image should be null/empty");
           getAsync.complete();
         }
       });

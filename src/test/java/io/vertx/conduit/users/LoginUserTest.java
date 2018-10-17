@@ -24,6 +24,8 @@ public class LoginUserTest {
 
     private Vertx vertx;
 
+    private WebClient webClient;
+
     @Before
     public void setUp(TestContext tc) {
         vertx = Vertx.vertx();

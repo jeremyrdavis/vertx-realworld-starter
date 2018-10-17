@@ -45,6 +45,7 @@ public class HttpVerticle extends AbstractVerticle {
     apiRouter.get("/user").handler(this::getCurrentUser);
     apiRouter.post("/users").handler(this::registerUser);
     apiRouter.post("/users/login").handler(this::loginUser);
+    apiRouter.get("/profiles/:username").handler(this::getProfile);
     baseRouter.mountSubRouter("/api", apiRouter);
 
 //    new HttpServerOptions()
@@ -60,6 +61,36 @@ public class HttpVerticle extends AbstractVerticle {
         }
       });
 
+  }
+
+  private void getProfile(RoutingContext routingContext) {
+    String username = routingContext.request().getParam("username");
+    if (username == null || username.isEmpty()) {
+      routingContext.response().setStatusCode(400).end();
+    }else{
+      JsonObject message = new JsonObject()
+        .put(MESSAGE_ACTION, MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME)
+        .put(MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE, username);
+
+      vertx.eventBus().send(MESSAGE_ADDRESS, message, ar ->{
+
+        if (ar.succeeded()) {
+          JsonObject userJson = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
+          final User returnedUser = new User(userJson);
+          routingContext.response()
+            .setStatusCode(200)
+            .putHeader("Content-Type", "application/json; charset=utf-8")
+            //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+            .end(Json.encodePrettily(returnedUser.toConduitJson()));
+        }else{
+          System.out.println("Did Not Find User");
+          routingContext.response().setStatusCode(422)
+            .putHeader("content-type", "application/json; charset=utf-8")
+            //.putHeader("Content-Length", String.valueOf(loginError.toString().length()))
+            .end(Json.encodePrettily(new AuthenticationError(ErrorMessages.AUTHENTICATION_ERROR_DEFAULT + " " + ar.cause().getMessage())));
+        }
+      });
+    }
   }
 
   private void getCurrentUser(RoutingContext routingContext) {
