@@ -9,6 +9,8 @@ import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.mongo.MongoAuth;
+import io.vertx.ext.auth.mongo.impl.DefaultHashStrategy;
+import io.vertx.ext.auth.mongo.impl.MongoUser;
 import io.vertx.ext.mongo.MongoClient;
 
 public class MongoVerticle extends AbstractVerticle {
@@ -243,7 +245,7 @@ public class MongoVerticle extends AbstractVerticle {
 
     final User userToRegister = new User(message.body().getJsonObject(MESSAGE_VALUE_USER));
 
-    registerUser(userToRegister).setHandler(ar -> {
+    insertUser(userToRegister).setHandler(ar -> {
 
       if (ar.succeeded()) {
         message.reply(new JsonObject()
@@ -258,34 +260,29 @@ public class MongoVerticle extends AbstractVerticle {
 
   }
 
-  private Future<User> registerUser(User user) {
+  private Future<Void> insertUser(User user) {
+    Future<Void> retVal = Future.future();
 
-    Future<User> retVal = Future.future();
+    user.setSalt(DefaultHashStrategy.generateSalt());
+    String hashedPassword = loginAuthProvider
+      .getHashStrategy().computeHash(user.getPassword(),
+        new MongoUser(
+          new JsonObject()
+            .put("email", user.getEmail()),
+          loginAuthProvider));
+    user.setPassword(hashedPassword);
 
-    System.out.println("inserting user: " + user.toConduitJson().toString());
-
-    loginAuthProvider.insertUser(user.getEmail(), user.getPassword(), null, null, ar -> {
+    mongoClient.save(MongoConstants.COLLECTION_NAME_USERS, user.toMongoJson(), ar -> {
       if (ar.succeeded()) {
-        // the rest of the User
-        JsonObject query = new JsonObject().put("email", user.getEmail());
-        JsonObject update = new JsonObject()
-          .put("$set", new JsonObject().put("username", user.getUsername()).put("bio", user.getBio()).put("image", user.getImage()));
-        mongoClient.updateCollection(MongoConstants.COLLECTION_NAME_USERS, query, update, res -> {
-          if (res.succeeded()) {
-            System.out.println("updated user");
-            retVal.complete(user);
-          } else {
-            System.out.println("railed to update user");
-            retVal.fail(res.cause());
-          }
-        });
-      } else {
+        user.set_id(ar.result());
+        System.out.println("insert successful:" + user.toMongoJson());
+        retVal.complete();
+      }else{
         retVal.fail(ar.cause());
       }
     });
 
     return retVal;
   }
-
 
 }
