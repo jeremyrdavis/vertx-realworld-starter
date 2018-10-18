@@ -1,53 +1,18 @@
 package io.vertx.conduit.users;
 
+import io.vertx.conduit.BaseDatabaseVerticleTest;
 import io.vertx.conduit.HttpProps;
 import io.vertx.conduit.users.models.User;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.conduit.DBSetupVerticle;
-import io.vertx.conduit.MainVerticle;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
-import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
-import static io.vertx.conduit.TestProps.DB_NAME_TEST;
-
 @RunWith(VertxUnitRunner.class)
-public class RegisterUserTest {
-
-    private Vertx vertx;
-
-    @Before
-    public void setUp(TestContext tc) {
-        vertx = Vertx.vertx();
-
-        DeploymentOptions options = new DeploymentOptions()
-                .setConfig(new JsonObject()
-                        .put("http.port", 8080)
-                        .put("db_name", DB_NAME_TEST)
-                        .put("connection_string", DB_CONNECTION_STRING_TEST)
-                );
-
-        vertx.deployVerticle(new DBSetupVerticle(), ar -> {
-            if (ar.succeeded()) {
-                System.out.println("DBSetupVerticle complete");
-                vertx.deployVerticle(MainVerticle.class.getName(), options, tc.asyncAssertSuccess());
-            } else {
-                tc.fail(ar.cause());
-            }
-        });
-
-    }
-
-    @After
-    public void tearDown(TestContext tc) {
-        vertx.close(tc.asyncAssertSuccess());
-    }
+public class RegisterUserTest extends BaseDatabaseVerticleTest {
 
     @Test
     public void testRegisteringAUser(TestContext tc) {

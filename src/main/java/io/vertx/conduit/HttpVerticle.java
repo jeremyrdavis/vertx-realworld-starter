@@ -1,14 +1,11 @@
 package io.vertx.conduit;
 
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader;
 import io.vertx.conduit.errors.AuthenticationError;
 import io.vertx.conduit.errors.ErrorMessages;
 import io.vertx.conduit.errors.RegistrationError;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;

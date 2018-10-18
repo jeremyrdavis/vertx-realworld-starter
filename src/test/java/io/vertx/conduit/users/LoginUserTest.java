@@ -1,9 +1,6 @@
 package io.vertx.conduit.users;
 
-import io.vertx.conduit.DBSetupVerticle;
-import io.vertx.conduit.HttpProps;
-import io.vertx.conduit.HttpVerticle;
-import io.vertx.conduit.MongoVerticle;
+import io.vertx.conduit.*;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -20,33 +17,7 @@ import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
 
 @RunWith(VertxUnitRunner.class)
-public class LoginUserTest {
-
-    private Vertx vertx;
-
-    private WebClient webClient;
-
-    @Before
-    public void setUp(TestContext tc) {
-        vertx = Vertx.vertx();
-
-        DeploymentOptions options = new DeploymentOptions()
-                .setConfig(new JsonObject()
-                        .put("http.port", 8080)
-                        .put("db_name", DB_NAME_TEST)
-                        .put("connection_string", DB_CONNECTION_STRING_TEST)
-                );
-
-        vertx.deployVerticle(DBSetupVerticle.class.getName(), tc.asyncAssertSuccess());
-        vertx.deployVerticle(HttpVerticle.class.getName(), options, tc.asyncAssertSuccess());
-        vertx.deployVerticle(MongoVerticle.class.getName(), options, tc.asyncAssertSuccess());
-
-    }
-
-    @After
-    public void tearDown(TestContext tc) {
-        vertx.close(tc.asyncAssertSuccess());
-    }
+public class LoginUserTest extends BaseDatabaseVerticleTest{
 
   /*
   @Test

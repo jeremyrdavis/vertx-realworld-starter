@@ -1,9 +1,6 @@
 package io.vertx.conduit.users;
 
-import io.vertx.conduit.DBSetupVerticle;
-import io.vertx.conduit.HttpProps;
-import io.vertx.conduit.HttpVerticle;
-import io.vertx.conduit.MongoVerticle;
+import io.vertx.conduit.*;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -20,36 +17,7 @@ import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
 
 @RunWith(VertxUnitRunner.class)
-public class GetProfileTest {
-
-  Vertx vertx;
-
-  private WebClient webClient;
-
-  String token = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6Impha2VAamFrZS5qYWtlIiwicGFzc3dvcmQiOiJqYWtlamFrZSIsImlhdCI6MTUzOTczNTQwM30.YBhmIStiM_909UNGWYo3kQk_K6no2yp2VQONlQzXpPk";
-
-  @Before
-  public void setUp(TestContext testContext){
-    vertx = Vertx.vertx();
-
-    webClient = WebClient.create(vertx);
-
-    DeploymentOptions options = new DeploymentOptions()
-      .setConfig(new JsonObject()
-        .put("http.port", 8080)
-        .put("db_name", DB_NAME_TEST)
-        .put("connection_string", DB_CONNECTION_STRING_TEST)
-      );
-
-    vertx.deployVerticle(DBSetupVerticle.class.getName(), testContext.asyncAssertSuccess());
-    vertx.deployVerticle(HttpVerticle.class.getName(), options, testContext.asyncAssertSuccess());
-    vertx.deployVerticle(MongoVerticle.class.getName(), options, testContext.asyncAssertSuccess());
-  }
-
-  @After
-  public void cleanUp(TestContext testContext) {
-    vertx.close(testContext.asyncAssertSuccess());
-  }
+public class GetProfileTest extends BaseDatabaseVerticleTest{
 
   @Test
   public void testGetProfile(TestContext testContext) {
@@ -58,7 +26,7 @@ public class GetProfileTest {
     webClient.get(8080, "localhost", "/api/profiles/Jacob")
       .putHeader(HttpProps.CONTENT_TYPE, HttpProps.JSON)
       .putHeader(HttpProps.XREQUESTEDWITH, HttpProps.XMLHTTPREQUEST)
-      .putHeader(HttpProps.AUTHORIZATION, token)
+      .putHeader(HttpProps.AUTHORIZATION, TestProps.TOKEN_JACOB)
       .send(ar ->{
         if (ar.failed()) {
           testContext.assertEquals(true, ar.succeeded(), "The call should have succeeded");
