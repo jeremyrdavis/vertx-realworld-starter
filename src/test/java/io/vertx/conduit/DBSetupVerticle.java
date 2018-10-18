@@ -38,7 +38,7 @@ public class DBSetupVerticle extends AbstractVerticle {
 
         Future<Void> init = dropCollectionUsers()
                 .compose(v -> insertUser(new User(null,"Jacob","jake@jake.jake", "jakejake", null, null, "I work at state farm", null)))
-                .compose(v -> insertUser(new User(null,"User1","User1@user.user", "user1user1", null, null, "I am User1", null)));
+                .compose(v -> insertUser(new User(null,"User1","user1@user.user", "user1user1", null, null, "I am User1", null)));
         init.setHandler(startFuture.completer());
 
     }

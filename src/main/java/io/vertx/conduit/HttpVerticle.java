@@ -8,6 +8,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTOptions;
@@ -66,28 +67,66 @@ public class HttpVerticle extends AbstractVerticle {
 
   private void followUser(RoutingContext routingContext) {
 
+    String username = routingContext.request().getParam("username");
+    if (username == null || username.isEmpty()) {
+      routingContext.response().setStatusCode(400).end();
+    }
+
     String headerAuth = routingContext.request().getHeader("Authorization");
     System.out.println("headerAuth: " + headerAuth);
 
     String[] values = headerAuth.split(" ");
     System.out.println("values[1]: " + values[1]);
 
-    jwtAuth.authenticate(new JsonObject()
-      .put("jwt", values[1]), res -> {
-      if (res.succeeded()) {
-        io.vertx.ext.auth.User theUser = res.result();
-        JsonObject principal = theUser.principal();
-      }
-    });
+    extractUserFromJWTToken(values[1]).setHandler(ar -> {
+      System.out.println(ar.result());
 
-    String username = routingContext.request().getParam("username");
-    if (username == null || username.isEmpty()) {
-      routingContext.response().setStatusCode(400).end();
-    } else {
       JsonObject message = new JsonObject()
         .put(MESSAGE_ACTION, MESSAGE_ACTION_FOLLOW_USER)
-        .put(MESSAGE_FOLLOW_USER_FOLLOWED_USER, username);
-    }
+        .put(MESSAGE_FOLLOW_USER_FOLLOWED_USER, username)
+        .put(MESSAGE_FOLLOW_USER_FOLLOWER, ar.result().getString("email"));
+
+      vertx.eventBus().send(MESSAGE_ADDRESS, message, r -> {
+
+        if (r.succeeded()) {
+
+          JsonObject details = ((JsonObject) r.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
+          User follower = new User(details.getJsonObject(MESSAGE_FOLLOW_USER_FOLLOWER));
+          User followed = new User(details.getJsonObject(MESSAGE_FOLLOW_USER_FOLLOWED_USER));
+
+          routingContext.response()
+            .setStatusCode(200)
+            .putHeader("Content-Type", "application/json; charset=utf-8")
+            //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+            .end(Json.encodePrettily(followed.toProfileJson()));
+
+        }else {
+
+          routingContext.response().setStatusCode(422)
+            .putHeader("content-type", "application/json; charset=utf-8")
+            //.putHeader("Content-Length", String.valueOf(loginError.toString().length()))
+            .end(Json.encodePrettily(r.cause()));
+        }
+      });
+
+    });
+
+  }
+
+
+
+  private Future<JsonObject> extractUserFromJWTToken(String token) {
+    Future<JsonObject> retVal = Future.future();
+    jwtAuth.authenticate(new JsonObject()
+      .put("jwt", token), res -> {
+      if (res.succeeded()) {
+        io.vertx.ext.auth.User theUser = res.result();
+        retVal.complete(theUser.principal());
+      }else{
+        retVal.fail(res.cause());
+      }
+    });
+    return retVal;
   }
 
 
@@ -98,7 +137,7 @@ public class HttpVerticle extends AbstractVerticle {
     } else {
       JsonObject message = new JsonObject()
         .put(MESSAGE_ACTION, MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME)
-        .put(MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE, username);
+        .put(MESSAGE_LOOKUP_CRITERIA, username);
 
       vertx.eventBus().send(MESSAGE_ADDRESS, message, ar -> {
 

@@ -1,5 +1,6 @@
 package io.vertx.conduit.users.models;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.net.URI;
@@ -30,13 +31,24 @@ public class User {
 
   String image;
 
-  List<String> following;
+  List<User> following;
 
-  public void follow(String _id) {
+  public void follow(User userToFollow) {
     if (this.following == null) {
       this.following = new ArrayList<>();
     }
-    this.following.add(_id);
+    this.following.add(userToFollow);
+  }
+
+  public boolean isFollowing(String username) {
+    if (following == null) return false;
+    boolean isFollowing = false;
+    for (User u : following) {
+      if(u.getUsername().equalsIgnoreCase(username)){
+        isFollowing = true;
+      }
+    }
+    return isFollowing;
   }
 
   public User() {
@@ -122,7 +134,11 @@ public class User {
             .put("password", this.password)
             .put("salt", this.salt);
     if (this.following != null) {
-      retVal.put("following", following.toArray(new String[following.size()]));
+      JsonArray followedUsers = new JsonArray();
+      for(User u : following){
+        followedUsers.add(u.get_id());
+      }
+      retVal.put("following", followedUsers);
     }
     return retVal;
   }
@@ -175,22 +191,17 @@ public class User {
     this.bio = bio;
   }
 
-  public String getImage() {
-    if (image == null) {
-      return "";
-    }
-    return image;
-  }
+  public String getImage() { return image; }
 
   public void setImage(String image) {
     this.image = image;
   }
 
-  public List<String> getFollowing() {
+  public List<User> getFollowing() {
     return following;
   }
 
-  public void setFollowing(List<String> following) {
+  public void setFollowing(List<User> following) {
     this.following = following;
   }
 

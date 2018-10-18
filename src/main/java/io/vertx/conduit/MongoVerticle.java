@@ -29,6 +29,7 @@ public class MongoVerticle extends AbstractVerticle {
   public static final String MESSAGE_RESPONSE_FAILURE = "failure";
   public static final String MESSAGE_RESPONSE_DETAILS = "details";
   public static final String MESSAGE_VALUE_USER = "user";
+  public static final String MESSAGE_LOOKUP_CRITERIA = "criteria";
 
   // for DB access
   private MongoClient mongoClient;
@@ -93,19 +94,21 @@ public class MongoVerticle extends AbstractVerticle {
           User followed = ar.result();
 
           // Get the user to update
-          findUserByUsername(message.body().getString(MESSAGE_FOLLOW_USER_FOLLOWER)).setHandler(ar2 -> {
+          findUserByEmail(message.body().getString(MESSAGE_FOLLOW_USER_FOLLOWER)).setHandler(ar2 -> {
             if (ar2.succeeded()) {
 
               User follower = ar2.result();
-              follower.follow(followed.get_id());
-              addFollower(follower).setHandler(ar3 -> {
+              follower.follow(followed);
+              addFollower(follower, followed).setHandler(ar3 -> {
 
                 // Update the user
                 if (ar3.succeeded()) {
                   message.reply(
                     new JsonObject()
                       .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
-                      .put(MESSAGE_RESPONSE_DETAILS, follower.toJson()));
+                      .put(MESSAGE_RESPONSE_DETAILS, new JsonObject()
+                        .put(MESSAGE_FOLLOW_USER_FOLLOWER, follower.toMongoJson())
+                        .put(MESSAGE_FOLLOW_USER_FOLLOWED_USER, followed.toMongoJson())));
                 }
               });
             } else {
@@ -127,13 +130,13 @@ public class MongoVerticle extends AbstractVerticle {
 
   }
 
-  private Future<Void> addFollower(User userToUpdate) {
+  private Future<Void> addFollower(User userToUpdate, User followed) {
     Future<Void> retVal = Future.future();
 
     JsonObject query = new JsonObject().put("email", userToUpdate.getEmail());
     JsonObject update = new JsonObject()
       .put("$set", new JsonObject()
-        .put("following", userToUpdate.getFollowing()));
+        .put("following", followed.get_id()));
 
     mongoClient.updateCollection(MongoConstants.COLLECTION_NAME_USERS, query, update, ar -> {
       if (ar.succeeded()) {
@@ -143,6 +146,22 @@ public class MongoVerticle extends AbstractVerticle {
       }
     });
 
+    return retVal;
+  }
+
+  private Future<User> findUserByEmail(String email){
+    Future<User> retVal = Future.future();
+
+    JsonObject query = new JsonObject().put("email", email);
+    mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, ar -> {
+
+      if (ar.succeeded()) {
+        User userToFollow = new User(ar.result().get(0));
+        retVal.complete(userToFollow);
+      } else {
+        retVal.fail(ar.cause());
+      }
+    });
     return retVal;
   }
 
@@ -165,11 +184,11 @@ public class MongoVerticle extends AbstractVerticle {
 
   private void lookupUserByUsername(Message<JsonObject> message) {
     JsonObject query = new JsonObject()
-      .put("username", message.body().getString(MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE));
+      .put("username", message.body().getString(MESSAGE_LOOKUP_CRITERIA));
 
     mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, res -> {
       if (res.succeeded()) {
-        System.out.println("lookupUserByUsername for username " + message.body().getString(MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE) + " result: " + res.result());
+        System.out.println("lookupUserByUsername for username " + message.body().getString(MESSAGE_LOOKUP_CRITERIA) + " result: " + res.result());
         message.reply(new JsonObject()
           .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
           .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
