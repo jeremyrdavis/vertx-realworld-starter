@@ -1,6 +1,6 @@
-= Vert.x Maven Starter
+= Vert.x Thinkster.io Realworld (Conduit) Starter
 
-This project is a template to start your own Vert.x project using Apache Maven.
+https://github.com/gothinkster/realworld/blob/master/api/README.md#profile
 
 == Prerequisites
 
