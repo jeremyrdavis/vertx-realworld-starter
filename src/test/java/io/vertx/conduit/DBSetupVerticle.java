@@ -35,6 +35,8 @@ public class DBSetupVerticle extends AbstractVerticle {
         authConfig.put(MongoAuth.PROPERTY_COLLECTION_NAME, MongoAuth.DEFAULT_COLLECTION_NAME);
         authConfig.put(MongoAuth.PROPERTY_SALT_STYLE, HashSaltStyle.COLUMN);;
         loginAuthProvider = MongoAuth.create(mongoClient, authConfig);
+        loginAuthProvider.setUsernameCredentialField("email");
+        loginAuthProvider.setUsernameField("email");
 
         Future<Void> init = dropCollectionUsers()
                 .compose(v -> insertUser(new User(null,"Jacob","jake@jake.jake", "jakejake", null, null, "I work at state farm", null)))
@@ -61,16 +63,17 @@ public class DBSetupVerticle extends AbstractVerticle {
         return retVal;
     }
 
+    /*
     private Future<Void> insertUser(User user) {
         Future<Void> retVal = Future.future();
 
         user.setSalt(DefaultHashStrategy.generateSalt());
         String hashedPassword = loginAuthProvider
                 .getHashStrategy().computeHash(user.getPassword(),
-                    new MongoUser(
-                        new JsonObject()
-                            .put("email", user.getEmail()),
-                        loginAuthProvider));
+                        new MongoUser(
+                                new JsonObject()
+                                        .put("email", user.getEmail()),
+                                loginAuthProvider));
         user.setPassword(hashedPassword);
 
         mongoClient.save(MongoConstants.COLLECTION_NAME_USERS, user.toMongoJson(), ar -> {
@@ -85,7 +88,35 @@ public class DBSetupVerticle extends AbstractVerticle {
 
         return retVal;
     }
+    */
+    private Future<Void> insertUser(User user) {
+        Future<Void> retVal = Future.future();
 
+        loginAuthProvider.insertUser(user.getEmail(), user.getPassword(), null, null, u ->{
+
+            if (u.succeeded()) {
+                System.out.println(u.result());
+                JsonObject query = new JsonObject().put("email", user.getEmail());
+                JsonObject update = new JsonObject().put("$set",
+                        new JsonObject()
+                            .put("bio", user.getBio())
+                            .put("username", user.getUsername()));
+                mongoClient.updateCollection(MongoConstants.COLLECTION_NAME_USERS, query, update, ar -> {
+                    if (ar.succeeded()) {
+                        System.out.println("insert successful:" + user.toMongoJson());
+                        retVal.complete();
+                    }else{
+                        retVal.fail(ar.cause());
+                    }
+                });
+
+            }else{
+                retVal.fail(u.cause());
+            }
+        });
+
+        return retVal;
+    }
     /*
         Insert the supplied user and return the id
      */

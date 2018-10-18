@@ -280,38 +280,21 @@ public class HttpVerticle extends AbstractVerticle {
     vertx.eventBus().send(MESSAGE_ADDRESS, message, ar -> {
       if (ar.succeeded()) {
 
-        JsonObject message2 = new JsonObject()
-          .put(MESSAGE_ACTION, MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL)
-          .put(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE, authInfo.getString("email"));
-
-        vertx.eventBus().send(MESSAGE_ADDRESS, message2, ar2 -> {
-          if (ar2.succeeded()) {
-            System.out.println(MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL + "succeeded");
-            JsonObject userJson = ((JsonObject) ar2.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
-            final User returnedUser = new User(userJson);
-            // get the JWT Token
-            returnedUser.setToken(jwtAuth.generateToken(authInfo, new JWTOptions().setIgnoreExpiration(true)));
-            routingContext.response()
-              .setStatusCode(200)
-              .putHeader("Content-Type", "application/json; charset=utf-8")
-              //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
-              .end(Json.encodePrettily(returnedUser.toConduitJson()));
+        JsonObject body = (JsonObject) ar.result().body();
+        final User returnedUser = new User(body.getJsonObject(MESSAGE_RESPONSE_DETAILS));
+        returnedUser.setToken(jwtAuth.generateToken(authInfo, new JWTOptions().setIgnoreExpiration(true)));
+        routingContext.response()
+          .setStatusCode(200)
+          .putHeader("Content-Type", "application/json; charset=utf-8")
+          .end(Json.encodePrettily(returnedUser.toConduitJson()));
           } else {
             System.out.println("Did Not Find User");
             routingContext.response().setStatusCode(422)
               .putHeader("content-type", "application/json; charset=utf-8")
               //.putHeader("Content-Length", String.valueOf(loginError.toString().length()))
-              .end(Json.encodePrettily(new AuthenticationError(ErrorMessages.AUTHENTICATION_ERROR_DEFAULT + " " + ar2.cause().getMessage())));
+              .end(Json.encodePrettily(new AuthenticationError(ErrorMessages.AUTHENTICATION_ERROR_DEFAULT + " " + ar.cause().getMessage())));
           }
         });
-      } else {
-        System.out.println("Did Not Find User");
-        routingContext.response().setStatusCode(422)
-          .putHeader("content-type", "application/json; charset=utf-8")
-          //.putHeader("Content-Length", String.valueOf(loginError.toString().length()))
-          .end(Json.encodePrettily(new AuthenticationError(ErrorMessages.AUTHENTICATION_ERROR_DEFAULT)));
-      }
-    });
 
   }
 

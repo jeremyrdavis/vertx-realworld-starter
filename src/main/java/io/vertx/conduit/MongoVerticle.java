@@ -49,6 +49,7 @@ public class MongoVerticle extends AbstractVerticle {
     // Configure authentication with MongoDB
     loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
     loginAuthProvider.setUsernameField("email");
+    loginAuthProvider.setUsernameCredentialField("email");
 
     JsonObject authProperties = new JsonObject();
     MongoAuth authProvider = MongoAuth.create(mongoClient, authProperties);
@@ -221,6 +222,22 @@ public class MongoVerticle extends AbstractVerticle {
     });
   }
 
+  private Future<User> lookupUserByCriteria(String criteria, String value) {
+    Future<User> retVal = Future.future();
+
+    JsonObject query = new JsonObject()
+      .put(criteria, value);
+    mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, res -> {
+      if (res.succeeded()) {
+        retVal.complete(new User(res.result().get(0)));
+      } else {
+        retVal.fail(res.cause());
+      }
+    });
+    return retVal;
+  }
+
+
   private void loginUser(Message<JsonObject> message) {
 
     //
@@ -230,11 +247,19 @@ public class MongoVerticle extends AbstractVerticle {
 
     loginAuthProvider.authenticate(authInfo, ar -> {
       if (ar.succeeded()) {
-        message.reply(new JsonObject()
-          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS));
+
+        lookupUserByCriteria("email", authInfo.getString("email")).setHandler(ar2 ->{
+          if (ar2.succeeded()) {
+            System.out.println(ar2.result());
+            message.reply(new JsonObject()
+              .put(MESSAGE_RESPONSE_DETAILS, ar2.result().toJson()));
+          }else{
+            message.reply(new JsonObject()
+              .put(MESSAGE_RESPONSE_DETAILS, ar2.cause().getMessage()));
+          }
+        });
       } else {
         message.reply(new JsonObject()
-          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
           .put(MESSAGE_RESPONSE_DETAILS, ar.cause().getMessage()));
       }
     });
