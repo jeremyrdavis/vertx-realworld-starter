@@ -3,9 +3,10 @@ package io.vertx.conduit.users.models;
 import io.vertx.core.json.JsonObject;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- *
  * username: String,
  * email: String,
  * password: String,
@@ -28,6 +29,15 @@ public class User {
   String bio;
 
   String image;
+
+  List<String> following;
+
+  public void follow(String _id) {
+    if (this.following == null) {
+      this.following = new ArrayList<>();
+    }
+    this.following.add(_id);
+  }
 
   public User() {
   }
@@ -61,26 +71,26 @@ public class User {
     this.image = image;
   }
 
-  public User(JsonObject jsonObject){
+  public User(JsonObject jsonObject) {
 
-    if(jsonObject.containsKey("_id")) this._id = jsonObject.getString("_id");
+    if (jsonObject.containsKey("_id")) this._id = jsonObject.getString("_id");
     this.username = jsonObject.getString("username");
     this.email = jsonObject.getString("email");
     this.password = jsonObject.getString("password");
-    if(jsonObject.containsKey("token")) this.token = jsonObject.getString("token");
-    if(jsonObject.containsKey("image")) this.image = jsonObject.getString("image");
-    if(jsonObject.containsKey("bio")) this.bio = jsonObject.getString("bio");
+    if (jsonObject.containsKey("token")) this.token = jsonObject.getString("token");
+    if (jsonObject.containsKey("image")) this.image = jsonObject.getString("image");
+    if (jsonObject.containsKey("bio")) this.bio = jsonObject.getString("bio");
 
   }
 
   public JsonObject toConduitJson() {
     return new JsonObject()
             .put("user", new JsonObject()
-                  .put("email", email)
-                  .put("token", token)
-                  .put("username", username)
-                  .put("bio", bio)
-                  .put("image", image));
+                    .put("email", email)
+                    .put("token", token)
+                    .put("username", username)
+                    .put("bio", bio)
+                    .put("image", image));
   }
 
   public JsonObject toJson() {
@@ -92,24 +102,29 @@ public class User {
             .put("image", image);
   }
 
-  public JsonObject toProfileJson(){
+  public JsonObject toProfileJson() {
     return new JsonObject()
             .put("profile", new JsonObject()
-                    .put("email", email)
-                    .put("token", token)
                     .put("username", username)
                     .put("bio", bio)
                     .put("image", image));
   }
 
-  public JsonObject toMongoJson(){
-    return new JsonObject()
-      .put("username", username)
-      .put("email", email)
-      .put("_id", _id)
-      .put("token", token)
-      .put("bio", bio);
-
+  public JsonObject toMongoJson() {
+    JsonObject retVal = new JsonObject();
+      if (this._id != null) {
+        retVal.put("_id", this._id);
+      }
+      retVal.put("username", username)
+            .put("email", email)
+            .put("token", token)
+            .put("bio", bio)
+            .put("password", this.password)
+            .put("salt", this.salt);
+    if (this.following != null) {
+      retVal.put("following", following.toArray(new String[following.size()]));
+    }
+    return retVal;
   }
 
   public String get_id() {
@@ -169,5 +184,21 @@ public class User {
 
   public void setImage(String image) {
     this.image = image;
+  }
+
+  public List<String> getFollowing() {
+    return following;
+  }
+
+  public void setFollowing(List<String> following) {
+    this.following = following;
+  }
+
+  public String getSalt() {
+    return salt;
+  }
+
+  public void setSalt(String salt) {
+    this.salt = salt;
   }
 }

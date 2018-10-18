@@ -1,9 +1,6 @@
 package io.vertx.conduit.users;
 
-import io.vertx.conduit.DBSetupVerticle;
-import io.vertx.conduit.HttpProps;
-import io.vertx.conduit.HttpVerticle;
-import io.vertx.conduit.MongoVerticle;
+import io.vertx.conduit.*;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -72,7 +69,7 @@ public class GetCurrentUserTest {
     webClient.get(8080, "localhost", "/api/user")
       .putHeader(HttpProps.CONTENT_TYPE, HttpProps.JSON)
       .putHeader(HttpProps.XREQUESTEDWITH, HttpProps.XMLHTTPREQUEST)
-      .putHeader(HttpProps.AUTHORIZATION, token)
+      .putHeader(HttpProps.AUTHORIZATION, TestProps.TOKEN_JACOB)
       .send(ar ->{
         if (ar.failed()) {
           testContext.assertEquals(true, ar.succeeded(), "The call should have succeeded");
@@ -84,8 +81,8 @@ public class GetCurrentUserTest {
           testContext.assertNotNull(returnedJson);
           JsonObject returnedUser = returnedJson.getJsonObject("user");
           testContext.assertEquals("Jacob", returnedUser.getString("username"));
-          testContext.assertEquals("user2@user2.user2", returnedUser.getString("email"), "Email should be 'user2@user2.user2");
-          testContext.assertNull(returnedUser.getString("bio"), "Bio should be null/empty");
+          testContext.assertEquals("jake@jake.jake", returnedUser.getString("email"), "Email should be 'user2@user2.user2");
+          testContext.assertEquals("I work at state farm", returnedUser.getString("bio"), "Bio should be I work at state farm");
           testContext.assertNull(returnedUser.getString("image"), "image should be null/empty");
           getAsync.complete();
         }

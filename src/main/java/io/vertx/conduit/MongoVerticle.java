@@ -11,16 +11,19 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.mongo.MongoClient;
 
-public class MongoVerticle extends AbstractVerticle{
+public class MongoVerticle extends AbstractVerticle {
 
   public static final String MESSAGE_ADDRESS = "address.login";
   public static final String MESSAGE_ACTION = "persistence.action";
+  public static final String MESSAGE_ACTION_FOLLOW_USER = "action.follow";
   public static final String MESSAGE_ACTION_REGISTER = "action.register";
   public static final String MESSAGE_ACTION_LOGIN = "action.login";
   public static final String MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL = "persistence.lookup.user.by.email";
   public static final String MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE = "email";
   public static final String MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME = "persistence.lookup.user.by.username";
   public static final String MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE = "username";
+  public static final String MESSAGE_FOLLOW_USER_FOLLOWED_USER = "followed";
+  public static final String MESSAGE_FOLLOW_USER_FOLLOWER = "follower";
   public static final String MESSAGE_RESPONSE = "response";
   public static final String MESSAGE_RESPONSE_SUCCESS = "success";
   public static final String MESSAGE_RESPONSE_FAILURE = "failure";
@@ -38,7 +41,7 @@ public class MongoVerticle extends AbstractVerticle{
 
     System.out.println(config().getString("db_name"));
     // Configure the MongoClient inline.  This should be externalized into a config file
-    mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", config().getString("db_name", "conduit")).put("connection_string", config().getString( "connection_string", "mongodb://localhost:27017")));
+    mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", config().getString("db_name", "conduit")).put("connection_string", config().getString("connection_string", "mongodb://localhost:27017")));
 
     // Configure authentication with MongoDB
     loginAuthProvider = MongoAuth.create(mongoClient, new JsonObject());
@@ -68,12 +71,96 @@ public class MongoVerticle extends AbstractVerticle{
         case MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME:
           lookupUserByUsername(message);
           break;
+        case MESSAGE_ACTION_FOLLOW_USER:
+          followUser(message);
+          break;
         default:
           message.fail(1, "Unkown action: " + message.body());
       }
     });
 
     startFuture.complete();
+  }
+
+  private void followUser(Message<JsonObject> message) {
+
+    try {
+      // Get the user to follow
+      String username = message.body().getString(MESSAGE_FOLLOW_USER_FOLLOWED_USER);
+      findUserByUsername(username).setHandler(ar -> {
+
+        if (ar.succeeded()) {
+          User followed = ar.result();
+
+          // Get the user to update
+          findUserByUsername(message.body().getString(MESSAGE_FOLLOW_USER_FOLLOWER)).setHandler(ar2 -> {
+            if (ar2.succeeded()) {
+
+              User follower = ar2.result();
+              follower.follow(followed.get_id());
+              addFollower(follower).setHandler(ar3 -> {
+
+                // Update the user
+                if (ar3.succeeded()) {
+                  message.reply(
+                    new JsonObject()
+                      .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
+                      .put(MESSAGE_RESPONSE_DETAILS, follower.toJson()));
+                }
+              });
+            } else {
+              throw new RuntimeException(ar2.cause());
+            }
+          });
+        } else {
+          throw new RuntimeException(ar.cause());
+        }
+      });
+    } catch (Exception e) {
+
+      message.reply(
+        new JsonObject()
+          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
+          .put(MESSAGE_RESPONSE_DETAILS, e.getMessage()));
+    }
+
+
+  }
+
+  private Future<Void> addFollower(User userToUpdate) {
+    Future<Void> retVal = Future.future();
+
+    JsonObject query = new JsonObject().put("email", userToUpdate.getEmail());
+    JsonObject update = new JsonObject()
+      .put("$set", new JsonObject()
+        .put("following", userToUpdate.getFollowing()));
+
+    mongoClient.updateCollection(MongoConstants.COLLECTION_NAME_USERS, query, update, ar -> {
+      if (ar.succeeded()) {
+        retVal.complete();
+      }else{
+        retVal.fail(ar.cause());
+      }
+    });
+
+    return retVal;
+  }
+
+  private Future<User> findUserByUsername(String username) {
+
+    Future<User> retVal = Future.future();
+
+    JsonObject query = new JsonObject().put("username", username);
+    mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, ar -> {
+
+      if (ar.succeeded()) {
+        User userToFollow = new User(ar.result().get(0));
+        retVal.complete(userToFollow);
+      } else {
+        retVal.fail(ar.cause());
+      }
+    });
+    return retVal;
   }
 
   private void lookupUserByUsername(Message<JsonObject> message) {
@@ -86,7 +173,7 @@ public class MongoVerticle extends AbstractVerticle{
         message.reply(new JsonObject()
           .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
           .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
-      } else{
+      } else {
         message.reply(new JsonObject()
           .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
           .put(MESSAGE_RESPONSE_DETAILS, res.cause().getMessage()));
@@ -105,7 +192,7 @@ public class MongoVerticle extends AbstractVerticle{
         message.reply(new JsonObject()
           .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
           .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
-      } else{
+      } else {
         message.reply(new JsonObject()
           .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
           .put(MESSAGE_RESPONSE_DETAILS, res.cause().getMessage()));
@@ -120,11 +207,11 @@ public class MongoVerticle extends AbstractVerticle{
 
     System.out.println(authInfo.toString());
 
-    loginAuthProvider.authenticate(authInfo, ar ->{
+    loginAuthProvider.authenticate(authInfo, ar -> {
       if (ar.succeeded()) {
         message.reply(new JsonObject()
           .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS));
-      }else {
+      } else {
         message.reply(new JsonObject()
           .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
           .put(MESSAGE_RESPONSE_DETAILS, ar.cause().getMessage()));
@@ -143,7 +230,7 @@ public class MongoVerticle extends AbstractVerticle{
         message.reply(new JsonObject()
           .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
           .put(MESSAGE_RESPONSE_DETAILS, userToRegister.toJson()));
-      }else{
+      } else {
         message.reply(new JsonObject()
           .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
           .put(MESSAGE_RESPONSE_DETAILS, ar.cause()));
@@ -173,7 +260,7 @@ public class MongoVerticle extends AbstractVerticle{
             retVal.fail(res.cause());
           }
         });
-      }else{
+      } else {
         retVal.fail(ar.cause());
       }
     });

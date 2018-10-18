@@ -1,11 +1,14 @@
 package io.vertx.conduit;
 
+import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader;
 import io.vertx.conduit.errors.AuthenticationError;
 import io.vertx.conduit.errors.ErrorMessages;
 import io.vertx.conduit.errors.RegistrationError;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
@@ -46,6 +49,7 @@ public class HttpVerticle extends AbstractVerticle {
     apiRouter.post("/users").handler(this::registerUser);
     apiRouter.post("/users/login").handler(this::loginUser);
     apiRouter.get("/profiles/:username").handler(this::getProfile);
+    apiRouter.post("/profiles/:username/follow").handler(this::followUser);
     baseRouter.mountSubRouter("/api", apiRouter);
 
 //    new HttpServerOptions()
@@ -63,16 +67,43 @@ public class HttpVerticle extends AbstractVerticle {
 
   }
 
+  private void followUser(RoutingContext routingContext) {
+
+    String headerAuth = routingContext.request().getHeader("Authorization");
+    System.out.println("headerAuth: " + headerAuth);
+
+    String[] values = headerAuth.split(" ");
+    System.out.println("values[1]: " + values[1]);
+
+    jwtAuth.authenticate(new JsonObject()
+      .put("jwt", values[1]), res -> {
+      if (res.succeeded()) {
+        io.vertx.ext.auth.User theUser = res.result();
+        JsonObject principal = theUser.principal();
+      }
+    });
+
+    String username = routingContext.request().getParam("username");
+    if (username == null || username.isEmpty()) {
+      routingContext.response().setStatusCode(400).end();
+    } else {
+      JsonObject message = new JsonObject()
+        .put(MESSAGE_ACTION, MESSAGE_ACTION_FOLLOW_USER)
+        .put(MESSAGE_FOLLOW_USER_FOLLOWED_USER, username);
+    }
+  }
+
+
   private void getProfile(RoutingContext routingContext) {
     String username = routingContext.request().getParam("username");
     if (username == null || username.isEmpty()) {
       routingContext.response().setStatusCode(400).end();
-    }else{
+    } else {
       JsonObject message = new JsonObject()
         .put(MESSAGE_ACTION, MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME)
         .put(MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE, username);
 
-      vertx.eventBus().send(MESSAGE_ADDRESS, message, ar ->{
+      vertx.eventBus().send(MESSAGE_ADDRESS, message, ar -> {
 
         if (ar.succeeded()) {
           JsonObject userJson = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
@@ -82,7 +113,7 @@ public class HttpVerticle extends AbstractVerticle {
             .putHeader("Content-Type", "application/json; charset=utf-8")
             //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
             .end(Json.encodePrettily(returnedUser.toProfileJson()));
-        }else{
+        } else {
           System.out.println("Did Not Find User");
           routingContext.response().setStatusCode(422)
             .putHeader("content-type", "application/json; charset=utf-8")
@@ -112,7 +143,7 @@ public class HttpVerticle extends AbstractVerticle {
           .put(MESSAGE_ACTION, MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL)
           .put(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE, principal.getString("email"));
 
-        vertx.eventBus().send(MESSAGE_ADDRESS, message2, ar ->{
+        vertx.eventBus().send(MESSAGE_ADDRESS, message2, ar -> {
           if (ar.succeeded()) {
             System.out.println(MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL + "succeeded");
             JsonObject userJson = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
@@ -124,7 +155,7 @@ public class HttpVerticle extends AbstractVerticle {
               .putHeader("Content-Type", "application/json; charset=utf-8")
               //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
               .end(Json.encodePrettily(returnedUser.toConduitJson()));
-          }else{
+          } else {
             System.out.println("Did Not Find User");
             routingContext.response().setStatusCode(422)
               .putHeader("content-type", "application/json; charset=utf-8")
@@ -133,7 +164,7 @@ public class HttpVerticle extends AbstractVerticle {
           }
         });
 
-      }else{
+      } else {
         //failed!
         System.out.println("authentication failed ");
       }
@@ -153,7 +184,7 @@ public class HttpVerticle extends AbstractVerticle {
       .put(MESSAGE_VALUE_USER, routingContext.getBodyAsJson().getJsonObject("user"));
 
     System.out.println(message.getJsonObject("user"));
-    vertx.eventBus().send(MESSAGE_ADDRESS, message, ar->{
+    vertx.eventBus().send(MESSAGE_ADDRESS, message, ar -> {
       if (ar.succeeded()) {
         JsonObject userJson = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
         final User returnedUser = new User(userJson);
@@ -164,7 +195,7 @@ public class HttpVerticle extends AbstractVerticle {
           .putHeader("Content-Type", "application/json; charset=utf-8")
           //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
           .end(Json.encodePrettily(returnedUser.toConduitJson()));
-      }else{
+      } else {
         routingContext.response()
           .setStatusCode(422)
           .putHeader("content-type", "application/json; charset=utf-8")
@@ -218,7 +249,7 @@ public class HttpVerticle extends AbstractVerticle {
           .put(MESSAGE_ACTION, MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL)
           .put(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE, authInfo.getString("email"));
 
-        vertx.eventBus().send(MESSAGE_ADDRESS, message2, ar2 ->{
+        vertx.eventBus().send(MESSAGE_ADDRESS, message2, ar2 -> {
           if (ar2.succeeded()) {
             System.out.println(MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL + "succeeded");
             JsonObject userJson = ((JsonObject) ar2.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
@@ -230,7 +261,7 @@ public class HttpVerticle extends AbstractVerticle {
               .putHeader("Content-Type", "application/json; charset=utf-8")
               //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
               .end(Json.encodePrettily(returnedUser.toConduitJson()));
-          }else{
+          } else {
             System.out.println("Did Not Find User");
             routingContext.response().setStatusCode(422)
               .putHeader("content-type", "application/json; charset=utf-8")
@@ -238,7 +269,7 @@ public class HttpVerticle extends AbstractVerticle {
               .end(Json.encodePrettily(new AuthenticationError(ErrorMessages.AUTHENTICATION_ERROR_DEFAULT + " " + ar2.cause().getMessage())));
           }
         });
-      }else{
+      } else {
         System.out.println("Did Not Find User");
         routingContext.response().setStatusCode(422)
           .putHeader("content-type", "application/json; charset=utf-8")

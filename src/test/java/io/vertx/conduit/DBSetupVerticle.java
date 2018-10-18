@@ -1,12 +1,15 @@
 package io.vertx.conduit;
 
 import io.vertx.conduit.users.models.MongoConstants;
+import io.vertx.conduit.users.models.User;
 import io.vertx.core.*;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.auth.mongo.HashSaltStyle;
 import io.vertx.ext.auth.mongo.MongoAuth;
+import io.vertx.ext.auth.mongo.impl.DefaultHashStrategy;
+import io.vertx.ext.auth.mongo.impl.MongoUser;
 import io.vertx.ext.mongo.MongoClient;
 
 import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
@@ -34,16 +37,20 @@ public class DBSetupVerticle extends AbstractVerticle {
         loginAuthProvider = MongoAuth.create(mongoClient, authConfig);
 
         Future<Void> init = dropCollectionUsers()
-                .compose(v -> insertJacob())
-                .compose(v -> updateJacob());
+                .compose(v -> insertUser(new User(null,"Jacob","jake@jake.jake", "jakejake", null, null, "I work at state farm", null)))
+                .compose(v -> insertUser(new User(null,"User1","User1@user.user", "user1user1", null, null, "I am User1", null)));
         init.setHandler(startFuture.completer());
+
     }
 
-    private Future<Void> updateJacob(){
+    private Future<Void> updateJacob(User user){
         Future<Void> retVal = Future.future();
-        JsonObject query = new JsonObject().put("username", "Jacob");
+        JsonObject query = new JsonObject().put("username", user.getUsername());
         JsonObject update = new JsonObject()
-                .put("$set", new JsonObject().put("email", "jake@jake.jake").put("bio", "I work at state farm").put("image", ""));
+                .put("$set", new JsonObject()
+                        .put("email", user.getEmail())
+                        .put("bio", user.getBio())
+                        .put("image", user.getImage()));
         mongoClient.updateCollection(MongoConstants.COLLECTION_NAME_USERS, query, update, res -> {
             if (res.succeeded()) {
                 retVal.complete();
@@ -51,6 +58,31 @@ public class DBSetupVerticle extends AbstractVerticle {
                 retVal.fail(res.cause());
             }
         });
+        return retVal;
+    }
+
+    private Future<Void> insertUser(User user) {
+        Future<Void> retVal = Future.future();
+
+        user.setSalt(DefaultHashStrategy.generateSalt());
+        String hashedPassword = loginAuthProvider
+                .getHashStrategy().computeHash(user.getPassword(),
+                    new MongoUser(
+                        new JsonObject()
+                            .put("email", user.getEmail()),
+                        loginAuthProvider));
+        user.setPassword(hashedPassword);
+
+        mongoClient.save(MongoConstants.COLLECTION_NAME_USERS, user.toMongoJson(), ar -> {
+            if (ar.succeeded()) {
+                user.set_id(ar.result());
+                System.out.println("insert successful:" + user.toMongoJson());
+                retVal.complete();
+            }else{
+                retVal.fail(ar.cause());
+            }
+        });
+
         return retVal;
     }
 
