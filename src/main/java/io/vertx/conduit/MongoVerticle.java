@@ -249,7 +249,7 @@ public class MongoVerticle extends AbstractVerticle {
 
       if (ar.succeeded()) {
         message.reply(new JsonObject()
-          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
+          .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
           .put(MESSAGE_RESPONSE_DETAILS, userToRegister.toJson()));
       } else {
         message.reply(new JsonObject()
