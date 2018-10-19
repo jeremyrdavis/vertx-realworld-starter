@@ -18,6 +18,8 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.JWTAuthHandler;
 
+import java.lang.reflect.Member;
+
 import static io.vertx.conduit.MongoVerticle.*;
 
 public class HttpVerticle extends AbstractVerticle {
@@ -52,6 +54,7 @@ public class HttpVerticle extends AbstractVerticle {
     apiRouter.post("/users/login").handler(this::loginUser);
     apiRouter.get("/profiles/:username").handler(this::getProfile);
     apiRouter.post("/profiles/:username/follow").handler(JWTAuthHandler.create(jwtAuth)).handler(this::followUser);
+    apiRouter.delete("/profiles/:username/follow").handler(JWTAuthHandler.create(jwtAuth)).handler(this::unFollowUser);
     baseRouter.mountSubRouter("/api", apiRouter);
 
 //    new HttpServerOptions()
@@ -67,6 +70,46 @@ public class HttpVerticle extends AbstractVerticle {
         }
       });
 
+  }
+
+  private void unFollowUser(RoutingContext routingContext) {
+    String username = routingContext.request().getParam("username");
+    if (username == null || username.isEmpty()) {
+      routingContext.response().setStatusCode(400).end();
+    }
+
+    String headerAuth = routingContext.request().getHeader("Authorization");
+    String[] values = headerAuth.split(" ");
+
+    extractUserFromJWTToken(values[1]).setHandler(ar -> {
+      if (ar.succeeded()) {
+        JsonObject jwtUser = ar.result();
+
+        JsonObject message = new JsonObject()
+          .put(MESSAGE_ACTION, MESSAGE_ACTION_UNFOLLOW)
+          .put(MESSAGE_FOLLOW_USER_FOLLOWED_USER, username)
+          .put(MESSAGE_FOLLOW_USER_FOLLOWER, jwtUser.getString("email"));
+        vertx.eventBus().send(MESSAGE_ADDRESS, message, ar2-> {
+          if (ar2.succeeded()) {
+            JsonObject j =  ((JsonObject) ar2.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
+            User returnedUser = new User(j);
+
+            routingContext.response()
+              .setStatusCode(200)
+              .putHeader("Content-Type", "application/json; charset=utf-8")
+              //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+              .end(Json.encodePrettily(returnedUser.toProfileJson()));
+          } else {
+            routingContext.response().setStatusCode(422)
+              .putHeader("content-type", "application/json; charset=utf-8")
+              //.putHeader("Content-Length", String.valueOf(loginError.toString().length()))
+              .end(Json.encodePrettily(ar2.cause()));
+          }
+        });
+      }else{
+        throw new RuntimeException(ar.cause().getMessage());
+      }
+    });
   }
 
   private void updateUser(RoutingContext routingContext) {

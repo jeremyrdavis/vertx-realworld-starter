@@ -40,6 +40,13 @@ public class User {
     this.following.add(userToFollow);
   }
 
+    public void unFollow(User userToUnFollow) {
+        if (this.following == null) {
+            this.following = new ArrayList<>();
+        }
+        this.following.remove(userToUnFollow);
+    }
+
   public boolean isFollowing(String username) {
     if (following == null) return false;
     boolean isFollowing = false;
@@ -93,34 +100,62 @@ public class User {
     if (jsonObject.containsKey("token")) this.token = jsonObject.getString("token");
     if (jsonObject.containsKey("image")) this.image = jsonObject.getString("image");
     if (jsonObject.containsKey("bio")) this.bio = jsonObject.getString("bio");
+    if (jsonObject.containsKey("salt")) this.salt = jsonObject.getString("salt");
 
   }
 
-  public JsonObject toConduitJson() {
-    return new JsonObject()
-            .put("user", new JsonObject()
-                    .put("email", email)
-                    .put("token", token)
-                    .put("username", username)
-                    .put("bio", bio)
-                    .put("image", image));
+    public JsonObject toConduitJson() {
+      JsonObject retVal = new JsonObject()
+              .put("username", username)
+              .put("bio", bio)
+              .put("image", image);
+
+      if (this.following != null) {
+        JsonArray followedUsers = new JsonArray();
+        for(User u : following){
+          followedUsers.add(u.get_id());
+        }
+        retVal.put("following", followedUsers);
+      }
+
+
+      return new JsonObject().put("user", retVal);
   }
 
   public JsonObject toJson() {
-    return new JsonObject()
-            .put("email", email)
-            .put("token", token)
+    JsonObject retVal = new JsonObject()
             .put("username", username)
             .put("bio", bio)
             .put("image", image);
+
+    if (this.following != null) {
+      JsonArray followedUsers = new JsonArray();
+      for(User u : following){
+        followedUsers.add(u.get_id());
+      }
+      retVal.put("following", followedUsers);
+    }
+
+
+    return retVal;
   }
 
   public JsonObject toProfileJson() {
-    return new JsonObject()
-            .put("profile", new JsonObject()
-                    .put("username", username)
-                    .put("bio", bio)
-                    .put("image", image));
+    JsonObject retVal = new JsonObject()
+            .put("username", username)
+            .put("bio", bio)
+            .put("image", image);
+
+    if (this.following != null) {
+      JsonArray followedUsers = new JsonArray();
+      for(User u : following){
+        followedUsers.add(u.get_id());
+      }
+      retVal.put("following", followedUsers);
+    }
+
+
+    return new JsonObject().put("profile", retVal);
   }
 
   public JsonObject toMongoJson() {
