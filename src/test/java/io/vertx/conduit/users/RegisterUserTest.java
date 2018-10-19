@@ -18,7 +18,7 @@ public class RegisterUserTest extends BaseDatabaseVerticleTest {
     public void testRegisteringAUser(TestContext tc) {
         Async async = tc.async();
 
-        User user = new User("username", "user@domain.com", "password");
+        User user = new User("user@domain.com", "password", "username");
         final String length = String.valueOf(user.toJson().toString().length());
 
         WebClient webClient = WebClient.create(vertx);

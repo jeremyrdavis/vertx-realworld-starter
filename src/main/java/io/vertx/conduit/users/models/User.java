@@ -59,17 +59,18 @@ public class User {
     this.password = password;
   }
 
-  public User(String username, String email, String password) {
+  public User(String email, String password, String username) {
     this.username = username;
     this.email = email;
     this.password = password;
   }
 
-  public User(String username, String email, String password, String token) {
+  public User(String email, String password, String username, String bio, String image) {
     this.username = username;
     this.email = email;
     this.password = password;
-    this.token = token;
+    this.bio = bio;
+    this.image = image;
   }
 
   public User(String _id, String username, String email, String password, String salt, String token, String bio, String image) {

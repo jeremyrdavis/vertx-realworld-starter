@@ -24,6 +24,7 @@ public class MongoVerticle extends AbstractVerticle {
   public static final String MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE = "email";
   public static final String MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME = "persistence.lookup.user.by.username";
   public static final String MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE = "username";
+  public static final String MESSAGE_ACTION_UPDATE = "action.update";
   public static final String MESSAGE_FOLLOW_USER_FOLLOWED_USER = "followed";
   public static final String MESSAGE_FOLLOW_USER_FOLLOWER = "follower";
   public static final String MESSAGE_RESPONSE = "response";
@@ -32,6 +33,8 @@ public class MongoVerticle extends AbstractVerticle {
   public static final String MESSAGE_RESPONSE_DETAILS = "details";
   public static final String MESSAGE_VALUE_USER = "user";
   public static final String MESSAGE_LOOKUP_CRITERIA = "criteria";
+  public static final String MESSAGE_UPDATE_EXISTING = "existing";
+  public static final String MESSAGE_UPDATE_NEW = "new";
 
   // for DB access
   private MongoClient mongoClient;
@@ -78,12 +81,42 @@ public class MongoVerticle extends AbstractVerticle {
         case MESSAGE_ACTION_FOLLOW_USER:
           followUser(message);
           break;
+        case MESSAGE_ACTION_UPDATE:
+          updateUser(message);
+          break;
         default:
           message.fail(1, "Unkown action: " + message.body());
       }
     });
 
     startFuture.complete();
+  }
+
+  private void updateUser(Message<JsonObject> message) {
+
+    JsonObject valuesToUpdate = message.body().getJsonObject(MESSAGE_UPDATE_NEW);
+    String username = message.body().getString(MESSAGE_UPDATE_EXISTING);
+
+    JsonObject query = new JsonObject().put("username", username);
+    JsonObject update = new JsonObject().put("$set", valuesToUpdate);
+
+
+    mongoClient.updateCollection(MongoConstants.COLLECTION_NAME_USERS, query, update, ar ->{
+
+      if (ar.succeeded()) {
+
+        mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, new JsonObject().put("username", username), ar2 ->{
+          if (ar2.succeeded()) {
+            JsonObject result = ar2.result().get(0);
+            message.reply(new JsonObject().put(MESSAGE_RESPONSE_DETAILS, result));
+          }else{
+            message.fail(1, ar2.cause().getMessage());
+          }
+        });
+      }else{
+        message.fail(1, ar.cause().getMessage());
+      }
+    });
   }
 
   private void followUser(Message<JsonObject> message) {

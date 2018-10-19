@@ -3,6 +3,7 @@ package io.vertx.conduit;
 import io.vertx.conduit.DBSetupVerticle;
 import io.vertx.conduit.HttpVerticle;
 import io.vertx.conduit.MongoVerticle;
+import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -23,6 +24,10 @@ public abstract class BaseDatabaseVerticleTest {
 
   protected WebClient webClient;
 
+  protected User jacob;
+
+  protected User user1;
+
   @Before
   public void setUp(TestContext tc) {
 
@@ -36,6 +41,7 @@ public abstract class BaseDatabaseVerticleTest {
         .put("connection_string", DB_CONNECTION_STRING_TEST)
       );
 
+    jacob = new User("jake@jake.jake", "jakejake", "Jacob", "I work at state farm", null);
     vertx.deployVerticle(DBSetupVerticle.class.getName(), tc.asyncAssertSuccess());
     vertx.deployVerticle(HttpVerticle.class.getName(), options, tc.asyncAssertSuccess());
     vertx.deployVerticle(MongoVerticle.class.getName(), options, tc.asyncAssertSuccess());
