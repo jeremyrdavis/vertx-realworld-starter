@@ -120,54 +120,51 @@ public class UserDAV extends AbstractVerticle {
                             }
                         });
                     } else {
-                        throw new RuntimeException(ar2.cause());
+                        message.fail(MessagingErrorCodes.LOOKUP_FAILED.ordinal(), MessagingErrorCodes.LOOKUP_FAILED.message);
                     }
                 });
-            } else {
-                throw new RuntimeException(ar.cause());
+            }else {
+                message.fail(MessagingErrorCodes.LOOKUP_FAILED.ordinal(), MessagingErrorCodes.LOOKUP_FAILED.message);
             }
         });
     }
 
     private void followUser(Message<JsonObject> message) {
 
-        try {
-            // Get the user to follow
-            String username = message.body().getString(MESSAGE_FOLLOW_USER_FOLLOWED_USER);
-            findUserByUsername(username).setHandler(ar -> {
+        // Get the user to follow
+        String username = message.body().getString(MESSAGE_FOLLOW_USER_FOLLOWED_USER);
+        findUserByUsername(username).setHandler(ar -> {
 
-                if (ar.succeeded()) {
-                    User followed = ar.result();
+            if (ar.succeeded()) {
+                User followed = ar.result();
 
-                    // Get the user to update
-                    findUserByEmail(message.body().getString(MESSAGE_FOLLOW_USER_FOLLOWER)).setHandler(ar2 -> {
-                        if (ar2.succeeded()) {
+                // Get the user to update
+                findUserByEmail(message.body().getString(MESSAGE_FOLLOW_USER_FOLLOWER)).setHandler(ar2 -> {
+                    if (ar2.succeeded()) {
 
-                            User follower = ar2.result();
-                            follower.follow(followed);
-                            addFollower(follower, followed).setHandler(ar3 -> {
+                        User follower = ar2.result();
+                        follower.follow(followed);
+                        addFollower(follower, followed).setHandler(ar3 -> {
 
-                                // Update the user
-                                if (ar3.succeeded()) {
-                                    message.reply(
-                                            new JsonObject()
-                                                    .put(MESSAGE_RESPONSE_DETAILS, new JsonObject()
-                                                            .put(MESSAGE_FOLLOW_USER_FOLLOWER, follower.toMongoJson())
-                                                            .put(MESSAGE_FOLLOW_USER_FOLLOWED_USER, followed.toMongoJson())));
-                                }
-                            });
-                        } else {
-                            throw new RuntimeException(ar2.cause());
-                        }
-                    });
-                } else {
-                    throw new RuntimeException(ar.cause());
-                }
-            });
-        } catch (Exception e) {
+                            // Update the user
+                            if (ar3.succeeded()) {
+                                message.reply(
+                                        new JsonObject()
+                                                .put(MESSAGE_RESPONSE_DETAILS, new JsonObject()
+                                                        .put(MESSAGE_FOLLOW_USER_FOLLOWER, follower.toMongoJson())
+                                                        .put(MESSAGE_FOLLOW_USER_FOLLOWED_USER, followed.toMongoJson())));
+                            }
+                        });
+                    }else {
+                        message.fail(MessagingErrorCodes.LOOKUP_FAILED.ordinal(), MessagingErrorCodes.LOOKUP_FAILED.message);
+                    }
+                });
+            }else {
+                message.fail(MessagingErrorCodes.LOOKUP_FAILED.ordinal(), MessagingErrorCodes.LOOKUP_FAILED.message);
+            }
+        });
 
-            message.fail(MessagingErrorCodes.UNKNOWN_ERROR.ordinal(), MessagingErrorCodes.UNKNOWN_ERROR.message);
-        }
+//            message.fail(MessagingErrorCodes.UNKNOWN_ERROR.ordinal(), MessagingErrorCodes.UNKNOWN_ERROR.message);
 
 
     }
@@ -200,7 +197,6 @@ public class UserDAV extends AbstractVerticle {
     }
 
     /**
-     *
      * @param userToUpdate User object with new values that need to be persisted
      * @return
      */
@@ -363,7 +359,7 @@ public class UserDAV extends AbstractVerticle {
                 message.reply(new JsonObject()
                         .put(MESSAGE_RESPONSE_DETAILS, userToRegister.toJson()));
             } else {
-                message.fail(MessagingErrorCodes.DB_INSERT_FAILURE.ordinal(), MessagingErrorCodes.DB_INSERT_FAILURE + ar.cause().getMessage());
+                message.fail(MessagingErrorCodes.INSERT_FAILURE.ordinal(), MessagingErrorCodes.INSERT_FAILURE + ar.cause().getMessage());
             }
         });
 
