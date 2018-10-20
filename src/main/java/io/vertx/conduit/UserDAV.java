@@ -26,6 +26,7 @@ public class UserDAV extends AbstractVerticle {
     public static final String MESSAGE_ACTION = "action";
     public static final String MESSAGE_ACTION_FOLLOW_USER = "action.follow";
     public static final String MESSAGE_ACTION_LOGIN = "action.login";
+    public static final String MESSAGE_ACTION_LOOKUP_ARTICLE_BY_SLUG = "action.lookup.article.by.slug";
     public static final String MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL = "persistence.lookup.user.by.email";
     public static final String MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME = "persistence.lookup.user.by.username";
     public static final String MESSAGE_ACTION_REGISTER = "action.register";
@@ -74,6 +75,9 @@ public class UserDAV extends AbstractVerticle {
             LOGGER.info(action);
 
             switch (action) {
+                case MESSAGE_ACTION_LOOKUP_ARTICLE_BY_SLUG:
+                    lookupArticleBySlug(message);
+                    break;
                 case MESSAGE_ACTION_CREATE_ARTICLE:
                     createArticle(message);
                     break;
@@ -104,6 +108,23 @@ public class UserDAV extends AbstractVerticle {
         });
 
         startFuture.complete();
+    }
+
+    private void lookupArticleBySlug(Message<JsonObject> message) {
+        JsonObject query = new JsonObject().put("slug", message.body().getString(MESSAGE_LOOKUP_CRITERIA));
+        lookupByCriteria(message, query);
+        mongoClient.find(MongoConstants.COLLECTION_NAME_ARTICLES, query, res -> {
+            if (res.succeeded()) {
+                LOGGER.info("lookup succeeded: " + res.result());
+                message.reply(new JsonObject()
+                        .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
+            } else {
+                message.fail(MessagingErrorCodes.NOT_FOUND.ordinal(), MessagingErrorCodes.NOT_FOUND.message + res.cause());
+            }
+        });
+    }
+
+    private void lookupByCriteria(Message<JsonObject> message, JsonObject query) {
     }
 
     /**

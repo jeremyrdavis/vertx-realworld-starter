@@ -65,7 +65,7 @@ public class HttpVerticle extends AbstractVerticle {
         apiRouter.route("/article*").handler(BodyHandler.create());
         apiRouter.get("/articles").handler(this::getArticles);
         apiRouter.post("/articles").handler(this::createArticle);
-        apiRouter.delete("/articles/:slug").handler(this::deleteArticle);
+        apiRouter.delete("/articles/:slug").handler(JWTAuthHandler.create(jwtAuth)).handler(this::deleteArticle);
         apiRouter.put("/articles/:slug").handler(this::updateArticle);
 
         baseRouter.mountSubRouter("/api", apiRouter);
@@ -135,6 +135,28 @@ public class HttpVerticle extends AbstractVerticle {
     }
 
     private void deleteArticle(RoutingContext routingContext) {
+        final String slug = routingContext.request().getParam("slug");
+
+        LOGGER.info(slug);
+
+        JsonObject message = new JsonObject()
+                .put(MESSAGE_ACTION, MESSAGE_ACTION_LOOKUP_ARTICLE_BY_SLUG)
+                .put(MESSAGE_LOOKUP_CRITERIA, slug);
+
+        vertx.eventBus().send(MESSAGE_ADDRESS, message, ar ->{
+            if (ar.succeeded()) {
+                routingContext.response()
+                        .setStatusCode(200)
+                        .putHeader("Content-Type", "application/json; charset=utf-8")
+                        //.putHeader("Content-Length", String.valueOf(userResult.toString().length()))
+                        .end();
+            } else{
+                routingContext.response().setStatusCode(422)
+                        .putHeader("content-type", "application/json; charset=utf-8")
+                        .end(Json.encodePrettily(new ConduitError(slug)));
+            }
+        });
+
 
     }
 

@@ -39,11 +39,13 @@ public class DBSetupVerticle extends AbstractVerticle {
         loginAuthProvider.setUsernameCredentialField("email");
         loginAuthProvider.setUsernameField("email");
 
+        Article article = new Article("Test Article 1", "Test description 1", "Lorem ipsum dolor site amet.", new ArrayList<String>(3){ { add("test1"); add("test2"); add("test3"); } });
+        article.setSlug("test-article-1");
         Future<Void> init = dropCollection(MongoConstants.COLLECTION_NAME_USERS)
                 .compose(v -> dropCollection(MongoConstants.COLLECTION_NAME_ARTICLES))
                 .compose(v -> insertUser(new User(null,"Jacob","jake@jake.jake", "jakejake", null, null, "I work at state farm", null)))
                 .compose(v -> insertUser(new User(null,"User1","user1@user.user", "user1user1", null, null, "I am User1", null)))
-                .compose(v -> insertArticle(new Article("Test Article 1", "Test description 1", "Lorem ipsum dolor site amet.", new ArrayList<String>(3){ { add("test1"); add("test2"); add("test3"); } })));
+                .compose(v -> insertArticle(article));
         init.setHandler(startFuture.completer());
 
     }
