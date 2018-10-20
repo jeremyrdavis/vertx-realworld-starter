@@ -1,22 +1,15 @@
 package io.vertx.conduit.users;
 
 import io.vertx.conduit.*;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.ext.web.client.WebClient;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
-import static io.vertx.conduit.TestProps.DB_NAME_TEST;
-
 @RunWith(VertxUnitRunner.class)
-public class GetCurrentUserTest extends BaseDatabaseVerticleTest{
+public class GetCurrentUserTest extends BaseConduitVerticleTest {
 
   @Test
   public void testGetCurrentUser(TestContext testContext){

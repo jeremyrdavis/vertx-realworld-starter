@@ -1,10 +1,8 @@
 package io.vertx.conduit.users;
 
-import io.vertx.conduit.BaseDatabaseVerticleTest;
+import io.vertx.conduit.BaseConduitVerticleTest;
 import io.vertx.conduit.HttpProps;
 import io.vertx.conduit.TestProps;
-import io.vertx.conduit.users.models.User;
-import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -17,7 +15,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(VertxUnitRunner.class)
-public class FollowUserTest extends BaseDatabaseVerticleTest{
+public class FollowUserTest extends BaseConduitVerticleTest {
 
   /**
    * Tests the endpoint "/api/profiles/:username/follow"

@@ -1,6 +1,6 @@
 package io.vertx.conduit.users;
 
-import io.vertx.conduit.BaseDatabaseVerticleTest;
+import io.vertx.conduit.BaseConduitVerticleTest;
 import io.vertx.conduit.HttpProps;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
-public class LoginUserTest extends BaseDatabaseVerticleTest {
+public class LoginUserTest extends BaseConduitVerticleTest {
 
   /*
   @Test

@@ -21,9 +21,6 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.JWTAuthHandler;
 
-import java.time.Instant;
-import java.util.Date;
-
 import static io.vertx.conduit.UserDAV.*;
 
 public class HttpVerticle extends AbstractVerticle {
@@ -66,7 +63,7 @@ public class HttpVerticle extends AbstractVerticle {
     // articles
     apiRouter.route("/article*").handler(BodyHandler.create());
     apiRouter.get("/articles").handler(this::getArticles);
-    apiRouter.post("/articles").handler(this::saveArticle);
+    apiRouter.post("/articles").handler(this::createArticle);
     apiRouter.delete("/articles/:slug").handler(this::deleteArticle);
     apiRouter.put("/articles/:slug").handler(this::updateArticle);
 
@@ -90,7 +87,7 @@ public class HttpVerticle extends AbstractVerticle {
   private void getArticles(RoutingContext routingContext) {
   }
 
-  private void saveArticle(RoutingContext routingContext) {
+  private void createArticle(RoutingContext routingContext) {
     JsonObject b =  routingContext.getBodyAsJson().getJsonObject("article");
     save(routingContext.getBodyAsJson()).setHandler(ar ->{
       if (ar.succeeded()) {

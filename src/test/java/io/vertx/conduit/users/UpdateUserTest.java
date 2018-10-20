@@ -1,18 +1,17 @@
 package io.vertx.conduit.users;
 
-import io.vertx.conduit.BaseDatabaseVerticleTest;
+import io.vertx.conduit.BaseConduitVerticleTest;
 import io.vertx.conduit.HttpProps;
 import io.vertx.conduit.TestProps;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.ext.web.client.WebClient;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
-public class UpdateUserTest extends BaseDatabaseVerticleTest{
+public class UpdateUserTest extends BaseConduitVerticleTest {
 
     @Test
     public void testJWTTokenRequired(TestContext testContext) {

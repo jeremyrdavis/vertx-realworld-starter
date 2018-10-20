@@ -1,7 +1,7 @@
 package io.vertx.conduit.users;
 
 
-import io.vertx.conduit.BaseDatabaseVerticleTest;
+import io.vertx.conduit.BaseConduitVerticleTest;
 import io.vertx.conduit.HttpProps;
 import io.vertx.conduit.TestProps;
 import io.vertx.core.json.JsonObject;
@@ -13,7 +13,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class UnfollowUserTest extends BaseDatabaseVerticleTest {
+public class UnfollowUserTest extends BaseConduitVerticleTest {
 
 
     @Test

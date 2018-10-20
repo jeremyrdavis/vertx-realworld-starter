@@ -15,7 +15,7 @@ import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
 
 @RunWith(VertxUnitRunner.class)
-public abstract class BaseDatabaseVerticleTest {
+public abstract class BaseConduitVerticleTest {
 
   protected Vertx vertx;
 
