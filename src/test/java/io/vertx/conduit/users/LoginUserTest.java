@@ -1,23 +1,17 @@
 package io.vertx.conduit.users;
 
-import io.vertx.conduit.*;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
+import io.vertx.conduit.BaseDatabaseVerticleTest;
+import io.vertx.conduit.HttpProps;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.ext.web.client.WebClient;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
-import static io.vertx.conduit.TestProps.DB_NAME_TEST;
-
 @RunWith(VertxUnitRunner.class)
-public class LoginUserTest extends BaseDatabaseVerticleTest{
+public class LoginUserTest extends BaseDatabaseVerticleTest {
 
   /*
   @Test
@@ -65,10 +59,10 @@ public class LoginUserTest extends BaseDatabaseVerticleTest{
                 .putHeader(HttpProps.XREQUESTEDWITH, HttpProps.XMLHTTPREQUEST)
                 .sendJsonObject(new JsonObject()
                         .put("user", new JsonObject()
-                        .put("username", "Jacob")
-                        .put("email", "jake@jake.jake")
-                        .put("password", "jakejake")
-                    ), ar -> {
+                                .put("username", "Jacob")
+                                .put("email", "jake@jake.jake")
+                                .put("password", "jakejake")
+                        ), ar -> {
                     if (ar.succeeded()) {
                         testContext.assertEquals(200, ar.result().statusCode());
                         System.out.println(ar.result().bodyAsJsonObject());
@@ -79,7 +73,7 @@ public class LoginUserTest extends BaseDatabaseVerticleTest{
                         testContext.assertEquals("jake@jake.jake", returnedUser.getString("email"));
                         testContext.assertEquals("I work at state farm", returnedUser.getString("bio"));
                         async.complete();
-                    }else{
+                    } else {
                         testContext.fail(ar.cause());
                     }
 

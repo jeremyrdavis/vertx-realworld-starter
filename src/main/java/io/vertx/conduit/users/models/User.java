@@ -127,7 +127,8 @@ public class User {
     JsonObject retVal = new JsonObject()
             .put("username", username)
             .put("bio", bio)
-            .put("image", image);
+            .put("image", image)
+            .put("email", email);
 
     if (this.following != null) {
       JsonArray followedUsers = new JsonArray();
