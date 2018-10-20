@@ -300,8 +300,8 @@ public class HttpVerticle extends AbstractVerticle {
     Future<JsonObject> retVal = Future.future();
 
     JsonObject message = new JsonObject()
-      .put(MESSAGE_ACTION, MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL)
-      .put(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE, email);
+      .put(MESSAGE_ACTION, MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL)
+      .put(MESSAGE_LOOKUP_CRITERIA, email);
 
     vertx.eventBus().send(MESSAGE_ADDRESS, message, ar -> {
 
@@ -323,7 +323,7 @@ public class HttpVerticle extends AbstractVerticle {
       routingContext.response().setStatusCode(400).end();
     } else {
       JsonObject message = new JsonObject()
-        .put(MESSAGE_ACTION, MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME)
+        .put(MESSAGE_ACTION, MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME)
         .put(MESSAGE_LOOKUP_CRITERIA, username);
 
       vertx.eventBus().send(MESSAGE_ADDRESS, message, ar -> {
@@ -383,12 +383,12 @@ public class HttpVerticle extends AbstractVerticle {
         System.out.println("theUser: " + theUser.principal().encodePrettily());
 
         JsonObject message2 = new JsonObject()
-          .put(MESSAGE_ACTION, MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL)
-          .put(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE, principal.getString("email"));
+          .put(MESSAGE_ACTION, MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL)
+          .put(MESSAGE_LOOKUP_CRITERIA, principal.getString("email"));
 
         vertx.eventBus().send(MESSAGE_ADDRESS, message2, ar -> {
           if (ar.succeeded()) {
-            System.out.println(MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL + "succeeded");
+            System.out.println(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL + "succeeded");
             JsonObject userJson = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
             final User returnedUser = new User(userJson);
             // get the JWT Token

@@ -7,7 +7,6 @@ import io.vertx.core.Future;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.auth.mongo.impl.DefaultHashStrategy;
@@ -17,22 +16,23 @@ import io.vertx.ext.mongo.MongoClient;
 public class UserDAV extends AbstractVerticle {
 
     public static final String MESSAGE_ADDRESS = "address.login";
-    public static final String MESSAGE_ACTION = "persistence.action";
+
+    // actions
+    public static final String MESSAGE_ACTION = "action";
     public static final String MESSAGE_ACTION_FOLLOW_USER = "action.follow";
-    public static final String MESSAGE_ACTION_UNFOLLOW = "action.unfollow";
-    public static final String MESSAGE_ACTION_REGISTER = "action.register";
     public static final String MESSAGE_ACTION_LOGIN = "action.login";
-    public static final String MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL = "persistence.lookup.user.by.email";
-    public static final String MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE = "email";
-    public static final String MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME = "persistence.lookup.user.by.username";
-    public static final String MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME_VALUE = "username";
+    public static final String MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL = "persistence.lookup.user.by.email";
+    public static final String MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME = "persistence.lookup.user.by.username";
+    public static final String MESSAGE_ACTION_REGISTER = "action.register";
+    public static final String MESSAGE_ACTION_UNFOLLOW = "action.unfollow";
     public static final String MESSAGE_ACTION_UPDATE = "action.update";
+
+    public static final String MESSAGE_RESPONSE = "response";
+    public static final String MESSAGE_RESPONSE_DETAILS = "details";
+
     public static final String MESSAGE_FOLLOW_USER_FOLLOWED_USER = "followed";
     public static final String MESSAGE_FOLLOW_USER_FOLLOWER = "follower";
-    public static final String MESSAGE_RESPONSE = "response";
-    public static final String MESSAGE_RESPONSE_SUCCESS = "success";
     public static final String MESSAGE_RESPONSE_FAILURE = "failure";
-    public static final String MESSAGE_RESPONSE_DETAILS = "details";
     public static final String MESSAGE_VALUE_USER = "user";
     public static final String MESSAGE_LOOKUP_CRITERIA = "criteria";
     public static final String MESSAGE_UPDATE_EXISTING = "existing";
@@ -74,10 +74,10 @@ public class UserDAV extends AbstractVerticle {
                 case MESSAGE_ACTION_LOGIN:
                     loginUser(message);
                     break;
-                case MESSSAGE_ACTION_LOOKUP_USER_BY_EMAIL:
+                case MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL:
                     lookupUserByEmail(message);
                     break;
-                case MESSSAGE_ACTION_LOOKUP_USER_BY_USERNAME:
+                case MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME:
                     lookupUserByUsername(message);
                     break;
                 case MESSAGE_ACTION_FOLLOW_USER:
@@ -118,7 +118,6 @@ public class UserDAV extends AbstractVerticle {
                             if (ar3.succeeded()) {
                                 message.reply(
                                         new JsonObject()
-                                                .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
                                                 .put(MESSAGE_RESPONSE_DETAILS, follower.toJson()));
                             }
                         });
@@ -154,7 +153,6 @@ public class UserDAV extends AbstractVerticle {
                                 if (ar3.succeeded()) {
                                     message.reply(
                                             new JsonObject()
-                                                    .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
                                                     .put(MESSAGE_RESPONSE_DETAILS, new JsonObject()
                                                             .put(MESSAGE_FOLLOW_USER_FOLLOWER, follower.toMongoJson())
                                                             .put(MESSAGE_FOLLOW_USER_FOLLOWED_USER, followed.toMongoJson())));
@@ -293,7 +291,6 @@ public class UserDAV extends AbstractVerticle {
             if (res.succeeded()) {
                 System.out.println("lookupUserByUsername for username " + message.body().getString(MESSAGE_LOOKUP_CRITERIA) + " result: " + res.result());
                 message.reply(new JsonObject()
-                        .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
                         .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
             } else {
                 message.reply(new JsonObject()
@@ -306,13 +303,12 @@ public class UserDAV extends AbstractVerticle {
     private void lookupUserByEmail(Message<JsonObject> message) {
 
         JsonObject query = new JsonObject()
-                .put("email", message.body().getString(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE));
+                .put("email", message.body().getString(MESSAGE_LOOKUP_CRITERIA));
 
         mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, res -> {
             if (res.succeeded()) {
-                System.out.println("lookupUserByEmail for email " + message.body().getString(MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL_VALUE) + " result: " + res.result());
+                System.out.println("lookupUserByEmail for email " + message.body().getString(MESSAGE_LOOKUP_CRITERIA) + " result: " + res.result());
                 message.reply(new JsonObject()
-                        .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
                         .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
             } else {
                 message.reply(new JsonObject()
@@ -374,7 +370,6 @@ public class UserDAV extends AbstractVerticle {
 
             if (ar.succeeded()) {
                 message.reply(new JsonObject()
-                        .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_SUCCESS)
                         .put(MESSAGE_RESPONSE_DETAILS, userToRegister.toJson()));
             } else {
                 message.reply(new JsonObject()
