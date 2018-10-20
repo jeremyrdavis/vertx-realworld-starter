@@ -11,6 +11,8 @@ import io.vertx.ext.auth.mongo.HashSaltStyle;
 import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.mongo.MongoClient;
 
+import java.util.ArrayList;
+
 import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
 
@@ -40,11 +42,23 @@ public class DBSetupVerticle extends AbstractVerticle {
         Future<Void> init = dropCollection(MongoConstants.COLLECTION_NAME_USERS)
                 .compose(v -> dropCollection(MongoConstants.COLLECTION_NAME_ARTICLES))
                 .compose(v -> insertUser(new User(null,"Jacob","jake@jake.jake", "jakejake", null, null, "I work at state farm", null)))
-                .compose(v -> insertUser(new User(null,"User1","user1@user.user", "user1user1", null, null, "I am User1", null)));
+                .compose(v -> insertUser(new User(null,"User1","user1@user.user", "user1user1", null, null, "I am User1", null)))
+                .compose(v -> insertArticle(new Article("Test Article 1", "Test description 1", "Lorem ipsum dolor site amet.", new ArrayList<String>(3){ { add("test1"); add("test2"); add("test3"); } })));
         init.setHandler(startFuture.completer());
 
     }
 
+    private Future<Void> insertArticle(Article article) {
+        Future<Void> retVal = Future.future();
+        mongoClient.save(MongoConstants.COLLECTION_NAME_ARTICLES, article.toJson(), ar -> {
+            if (ar.succeeded()) {
+                retVal.complete();
+            } else{
+                retVal.fail(ar.cause());
+            }
+        });
+        return retVal;
+    }
     /*
     private Future<Void> insertUser(User user) {
         Future<Void> retVal = Future.future();

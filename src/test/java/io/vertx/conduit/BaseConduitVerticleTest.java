@@ -9,13 +9,14 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.ext.web.client.WebClient;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
 
 @RunWith(VertxUnitRunner.class)
-public abstract class BaseConduitVerticleTest {
+public class BaseConduitVerticleTest {
 
   protected Vertx vertx;
 
@@ -42,6 +43,12 @@ public abstract class BaseConduitVerticleTest {
     vertx.deployVerticle(DBSetupVerticle.class.getName(), tc.asyncAssertSuccess());
     vertx.deployVerticle(HttpVerticle.class.getName(), options, tc.asyncAssertSuccess());
     vertx.deployVerticle(UserDAV.class.getName(), options, tc.asyncAssertSuccess());
+  }
+
+  @Test
+  public void testSetup(TestContext testContext){
+    System.out.println("base setup complete");
+    testContext.assertTrue(true);
   }
 
   @After
