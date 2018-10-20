@@ -1,6 +1,6 @@
 package io.vertx.conduit;
 
-public enum DAVErrorCodes {
+public enum MessagingErrorCodes {
 
     DB_CONNECTION_ERROR("Database Connection Error: "),
     DB_INSERT_FAILURE("Insert Failed: "),
@@ -10,7 +10,7 @@ public enum DAVErrorCodes {
 
     public final String message;
 
-    private DAVErrorCodes(String msg){
+    private MessagingErrorCodes(String msg){
         this.message = msg;
     }
 
