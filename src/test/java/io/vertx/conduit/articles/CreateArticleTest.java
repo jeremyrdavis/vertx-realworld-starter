@@ -34,6 +34,7 @@ public class CreateArticleTest extends BaseConduitVerticleTest {
                         tc.assertEquals("How to train your dragon", returnedArticle.getTitle(), "Title should be 'How to train your dragon'");
                         tc.assertEquals("Ever wonder how?", returnedArticle.getDescription(), "Description should be 'Ever wonder how?'");
                         tc.assertEquals("You have to believe", returnedArticle.getBody(), "Body should be 'You have to believe'");
+                        tc.assertNotNull("There should be a slug", returnedArticle.getSlug());
                         tc.assertNotNull(returnedArticle.getTagsList(), "TagsList should not be null");
                         tc.assertEquals(3, returnedArticle.getTagsList().size(), "There should be 3 tags");
                         /*

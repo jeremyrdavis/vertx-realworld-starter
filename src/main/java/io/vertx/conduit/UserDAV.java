@@ -1,5 +1,6 @@
 package io.vertx.conduit;
 
+import com.github.slugify.Slugify;
 import io.vertx.conduit.users.models.ConduitModelType;
 import io.vertx.conduit.users.models.MongoConstants;
 import io.vertx.conduit.users.models.User;
@@ -124,6 +125,10 @@ public class UserDAV extends AbstractVerticle {
             long time = new Date().getTime();
             objectToCreate.put("createdAt", time);
             objectToCreate.put("updatedAt", time);
+
+            Slugify slg = new Slugify();
+            String slug = slg.slugify(objectToCreate.getString("title"));
+            objectToCreate.put("slug", slug);
 
             message.body().remove(MESSAGE_CREATE_OBJECT);
             message.body().put(MESSAGE_CREATE_OBJECT, objectToCreate);//.putJsonObject(MESSAGE_CREATE_OBJECT).put("article", objectToCreate);
