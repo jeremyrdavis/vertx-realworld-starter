@@ -8,7 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-public class Article {
+public class Article implements ConduitDomainModel{
 
     private String id;
 
@@ -99,11 +99,19 @@ public class Article {
             .put("description", this.description)
             .put("body", this.body)
             .put("tagList", this.tagsList)
-            .put("createdAt", this.createdAt.getTime())
-            .put("updatedAt", this.updatedAt.getTime())
             .put("favorited", this.favorited)
             .put("favoritesCount", this.favoritesCount);
 
+        if (this.createdAt != null) {
+            retVal.put("createdAt", this.createdAt.getTime());
+        }else{
+            retVal.put("createdAt", this.createdAt);
+        }
+        if (this.updatedAt != null) {
+            retVal.put("updatedAt", this.updatedAt.getTime());
+        }else{
+            retVal.put("updatedAt", this.updatedAt);
+        }
         if (this.author != null) {
             retVal.put("author", this.author.toJson());
         }

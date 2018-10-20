@@ -1,5 +1,6 @@
 package io.vertx.conduit;
 
+import io.vertx.conduit.users.models.ConduitModelType;
 import io.vertx.conduit.users.models.MongoConstants;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.AbstractVerticle;
@@ -14,7 +15,6 @@ import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.auth.mongo.impl.DefaultHashStrategy;
 import io.vertx.ext.auth.mongo.impl.MongoUser;
 import io.vertx.ext.mongo.MongoClient;
-import org.bson.BsonTimestamp;
 
 import java.util.Date;
 
@@ -28,7 +28,7 @@ public class UserDAV extends AbstractVerticle {
     public static final String MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL = "persistence.lookup.user.by.email";
     public static final String MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME = "persistence.lookup.user.by.username";
     public static final String MESSAGE_ACTION_REGISTER = "action.register";
-    public static final String MESSAGE_ACTION_CREATE = "action.create";
+    public static final String MESSAGE_ACTION_CREATE_ARTICLE = "action.create.article";
     public static final String MESSAGE_ACTION_UNFOLLOW = "action.unfollow";
     public static final String MESSAGE_ACTION_UPDATE = "action.update";
     public static final String MESSAGE_RESPONSE_DETAILS = "details";
@@ -73,8 +73,8 @@ public class UserDAV extends AbstractVerticle {
             LOGGER.info(action);
 
             switch (action) {
-                case MESSAGE_ACTION_CREATE:
-                    create(message);
+                case MESSAGE_ACTION_CREATE_ARTICLE:
+                    createArticle(message);
                     break;
                 case MESSAGE_ACTION_REGISTER:
                     registerUser(message);
@@ -105,34 +105,45 @@ public class UserDAV extends AbstractVerticle {
         startFuture.complete();
     }
 
-    private void create(Message<JsonObject> message) {
+    /**
+     * Wrap the create method with Article specific stuff
+     *
+     * @param message
+     */
+    private void createArticle(Message<JsonObject> message) {
 
+        // get the JsonObject representing the Article from the message
         JsonObject objectToCreate = message.body().getJsonObject(MESSAGE_CREATE_OBJECT);
+
+        // verify that it exists
         if (objectToCreate == null) {
             message.fail(MessagingErrorCodes.INVALID_ARGUMENT.ordinal(), MessagingErrorCodes.INVALID_ARGUMENT.message);
         } else {
 
-            String obj;
-            if (message.body().getString(MESSAGE_OBJECT_TYPE).equalsIgnoreCase(MESSAGE_OBJECT_TYPE_ARTICLE)) {
-                obj = "article";
-            }else{
-                obj = "user";
-            }
+            // add the timestamp
             long time = new Date().getTime();
-            objectToCreate.getJsonObject("article").put("createdAt", time);
-            objectToCreate.getJsonObject("article").put("updatedAt", time);
-            mongoClient.save(obj, objectToCreate.getJsonObject(obj), res -> {
-                if (res.succeeded()) {
-//                    Object o = res.result();
-//                    objectToCreate.getJsonObject("article").put("id", res.result());
-                    LOGGER.info("Created: " + objectToCreate);
-                    message.reply(new JsonObject().put(MESSAGE_RESPONSE_DETAILS, objectToCreate));
-                } else {
-                    message.fail(MessagingErrorCodes.INSERT_FAILURE.ordinal(), MessagingErrorCodes.INSERT_FAILURE.message);
-                }
-            });
+            objectToCreate.put("createdAt", time);
+            objectToCreate.put("updatedAt", time);
+
+            message.body().remove(MESSAGE_CREATE_OBJECT);
+            message.body().put(MESSAGE_CREATE_OBJECT, objectToCreate);//.putJsonObject(MESSAGE_CREATE_OBJECT).put("article", objectToCreate);
+
+            create(message, MongoConstants.COLLECTION_NAME_ARTICLES);
 
         }
+    }
+
+    private void create(Message<JsonObject> message, String collectionName) {
+
+        JsonObject objectToCreate = message.body().getJsonObject(MESSAGE_CREATE_OBJECT);
+        mongoClient.save(collectionName, objectToCreate, res -> {
+            if (res.succeeded()) {
+                LOGGER.info("Created: " + objectToCreate);
+                message.reply(new JsonObject().put(MESSAGE_RESPONSE_DETAILS, objectToCreate));
+            } else {
+                message.fail(MessagingErrorCodes.INSERT_FAILURE.ordinal(), MessagingErrorCodes.INSERT_FAILURE.message);
+            }
+        });
     }
 
     private void unfollowUser(Message<JsonObject> message) {
