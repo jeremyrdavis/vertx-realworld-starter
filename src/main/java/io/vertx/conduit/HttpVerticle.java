@@ -1,6 +1,7 @@
 package io.vertx.conduit;
 
 import io.vertx.conduit.errors.AuthenticationError;
+import io.vertx.conduit.errors.ConduitError;
 import io.vertx.conduit.errors.ErrorMessages;
 import io.vertx.conduit.errors.RegistrationError;
 import io.vertx.conduit.users.models.User;
@@ -19,6 +20,9 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.JWTAuthHandler;
+
+import java.time.Instant;
+import java.util.Date;
 
 import static io.vertx.conduit.UserDAV.*;
 
@@ -59,6 +63,13 @@ public class HttpVerticle extends AbstractVerticle {
     apiRouter.get("/profiles/:username").handler(this::getProfile);
     apiRouter.post("/profiles/:username/follow").handler(JWTAuthHandler.create(jwtAuth)).handler(this::followUser);
     apiRouter.delete("/profiles/:username/follow").handler(JWTAuthHandler.create(jwtAuth)).handler(this::unFollowUser);
+    // articles
+    apiRouter.route("/article*").handler(BodyHandler.create());
+    apiRouter.get("/articles").handler(this::getArticles);
+    apiRouter.post("/articles").handler(this::saveArticle);
+    apiRouter.delete("/articles/:slug").handler(this::deleteArticle);
+    apiRouter.put("/articles/:slug").handler(this::updateArticle);
+
     baseRouter.mountSubRouter("/api", apiRouter);
 
 //    new HttpServerOptions()
@@ -75,6 +86,63 @@ public class HttpVerticle extends AbstractVerticle {
       });
 
   }
+
+  private void getArticles(RoutingContext routingContext) {
+  }
+
+  private void saveArticle(RoutingContext routingContext) {
+    JsonObject b =  routingContext.getBodyAsJson().getJsonObject("article");
+    save(routingContext.getBodyAsJson()).setHandler(ar ->{
+      if (ar.succeeded()) {
+        LOGGER.info("Save successful. Returning: " + ar.result().toString());
+        final Article returnedArticle = new Article(ar.result().getJsonObject("article"));
+        routingContext.response()
+                .setStatusCode(200)
+                .putHeader("Content-Type", "application/json; charset=utf-8")
+                .end(Json.encodePrettily(returnedArticle.toConduitJson()));
+      }else{
+        LOGGER.info("Save unsuccessful. Returning: " + ar.cause().getMessage());
+        routingContext.response().setStatusCode(422)
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .end(Json.encodePrettily(new ConduitError(ar.cause().getMessage())));
+      }
+    });
+  }
+
+  private Future<JsonObject> save(JsonObject jsonObject) {
+
+    Future<JsonObject> retVal = Future.future();
+
+    JsonObject message = new JsonObject()
+            .put(MESSAGE_ACTION, MESSAGE_ACTION_CREATE)
+            .put(MESSAGE_CREATE_OBJECT, jsonObject)
+            .put(MESSAGE_OBJECT_TYPE, MESSAGE_OBJECT_TYPE_ARTICLE);
+
+    vertx.eventBus().send(MESSAGE_ADDRESS, message, ar -> {
+
+      if (ar.succeeded()) {
+        JsonObject returned = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
+        LOGGER.info("Returned: " + returned);
+        retVal.complete(returned);
+      } else {
+        retVal.fail(ar.cause());
+      }
+    });
+    return retVal;
+  }
+
+  private void deleteArticle(RoutingContext routingContext) {
+
+  }
+
+  private void updateArticle(RoutingContext routingContext) {
+
+  }
+
+  // Article methods
+
+
+  // Users methods
 
   private void unFollowUser(RoutingContext routingContext) {
     String username = routingContext.request().getParam("username");

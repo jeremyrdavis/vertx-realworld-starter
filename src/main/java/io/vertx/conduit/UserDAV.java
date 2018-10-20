@@ -14,14 +14,13 @@ import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.auth.mongo.impl.DefaultHashStrategy;
 import io.vertx.ext.auth.mongo.impl.MongoUser;
 import io.vertx.ext.mongo.MongoClient;
+import org.bson.BsonTimestamp;
+
+import java.util.Date;
 
 public class UserDAV extends AbstractVerticle {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(UserDAV.class);
-
-
     public static final String MESSAGE_ADDRESS = "address.login";
-
     // actions
     public static final String MESSAGE_ACTION = "action";
     public static final String MESSAGE_ACTION_FOLLOW_USER = "action.follow";
@@ -29,18 +28,20 @@ public class UserDAV extends AbstractVerticle {
     public static final String MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL = "persistence.lookup.user.by.email";
     public static final String MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME = "persistence.lookup.user.by.username";
     public static final String MESSAGE_ACTION_REGISTER = "action.register";
+    public static final String MESSAGE_ACTION_CREATE = "action.create";
     public static final String MESSAGE_ACTION_UNFOLLOW = "action.unfollow";
     public static final String MESSAGE_ACTION_UPDATE = "action.update";
-
     public static final String MESSAGE_RESPONSE_DETAILS = "details";
-
+    public static final String MESSAGE_CREATE_OBJECT = "object";
     public static final String MESSAGE_FOLLOW_USER_FOLLOWED_USER = "followed";
     public static final String MESSAGE_FOLLOW_USER_FOLLOWER = "follower";
     public static final String MESSAGE_VALUE_USER = "user";
     public static final String MESSAGE_LOOKUP_CRITERIA = "criteria";
+    public static final String MESSAGE_OBJECT_TYPE = "object.type";
+    public static final String MESSAGE_OBJECT_TYPE_ARTICLE = "objec.type.artilce";
     public static final String MESSAGE_UPDATE_EXISTING = "existing";
     public static final String MESSAGE_UPDATE_NEW = "new";
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserDAV.class);
     // for DB access
     private MongoClient mongoClient;
 
@@ -72,6 +73,9 @@ public class UserDAV extends AbstractVerticle {
             LOGGER.info(action);
 
             switch (action) {
+                case MESSAGE_ACTION_CREATE:
+                    create(message);
+                    break;
                 case MESSAGE_ACTION_REGISTER:
                     registerUser(message);
                     break;
@@ -99,6 +103,36 @@ public class UserDAV extends AbstractVerticle {
         });
 
         startFuture.complete();
+    }
+
+    private void create(Message<JsonObject> message) {
+
+        JsonObject objectToCreate = message.body().getJsonObject(MESSAGE_CREATE_OBJECT);
+        if (objectToCreate == null) {
+            message.fail(MessagingErrorCodes.INVALID_ARGUMENT.ordinal(), MessagingErrorCodes.INVALID_ARGUMENT.message);
+        } else {
+
+            String obj;
+            if (message.body().getString(MESSAGE_OBJECT_TYPE).equalsIgnoreCase(MESSAGE_OBJECT_TYPE_ARTICLE)) {
+                obj = "article";
+            }else{
+                obj = "user";
+            }
+            long time = new Date().getTime();
+            objectToCreate.getJsonObject("article").put("createdAt", time);
+            objectToCreate.getJsonObject("article").put("updatedAt", time);
+            mongoClient.save(obj, objectToCreate.getJsonObject(obj), res -> {
+                if (res.succeeded()) {
+//                    Object o = res.result();
+//                    objectToCreate.getJsonObject("article").put("id", res.result());
+                    LOGGER.info("Created: " + objectToCreate);
+                    message.reply(new JsonObject().put(MESSAGE_RESPONSE_DETAILS, objectToCreate));
+                } else {
+                    message.fail(MessagingErrorCodes.INSERT_FAILURE.ordinal(), MessagingErrorCodes.INSERT_FAILURE.message);
+                }
+            });
+
+        }
     }
 
     private void unfollowUser(Message<JsonObject> message) {

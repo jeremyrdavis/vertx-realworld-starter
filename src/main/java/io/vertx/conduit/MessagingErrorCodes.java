@@ -6,6 +6,7 @@ public enum MessagingErrorCodes {
     INSERT_FAILURE("Insert Failed: "),
     LOOKUP_FAILED("Lookup Failed: "),
     NOT_FOUND("Not found: "),
+    INVALID_ARGUMENT("Invalid Argument: "),
     UNKNOWN_ERROR("Undetermined Error: ");
 
     private MessagingErrorCodes(String msg){
