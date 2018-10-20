@@ -1,6 +1,7 @@
 package io.vertx.conduit;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.logging.Logger;
@@ -8,31 +9,37 @@ import io.vertx.core.logging.LoggerFactory;
 
 public class MainVerticle extends AbstractVerticle {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
 
 
-  @Override
-  public void start(Future<Void> startFuture) {
+    @Override
+    public void start(Future<Void> startFuture) {
 
-      System.out.println("Deploying Verticles");
-      System.out.println(config().getString("db_name"));
-
-        vertx.deployVerticle(new HttpVerticle(), ar -> {
-            System.out.println("HttpVerticle deployed");
-
-          if (ar.succeeded()) {
-
-              vertx.deployVerticle(new MongoVerticle(), new DeploymentOptions().setConfig(config()), ar2 ->{
-                  if (ar2.succeeded()) {
-                      startFuture.complete();
-                  }else{
-                      startFuture.fail(ar.cause());
-                  }
-              });
-          }else{
-            startFuture.fail(ar.cause());
-          }
+        DeploymentOptions deploymentOptions = new DeploymentOptions().setConfig(config());
+        CompositeFuture.all(
+                deployVerticle(HttpVerticle.class, deploymentOptions),
+                deployVerticle(MongoVerticle.class, deploymentOptions)).setHandler(ar ->{
+            if (ar.succeeded()) {
+                LOGGER.info("all deployments succeeded");
+                startFuture.complete();
+            }else{
+                LOGGER.info("deployment failure: " + ar.cause().getMessage());
+                startFuture.fail(ar.cause());
+            }
         });
-  }
+    }
+
+    private Future<Void> deployVerticle(Class clazz, DeploymentOptions options) {
+        Future<Void> retVal = Future.future();
+
+        vertx.deployVerticle(clazz, options, ar -> {
+            if (ar.succeeded()) {
+                retVal.complete();
+            }else{
+                retVal.fail(ar.cause());
+            }
+        });
+        return retVal;
+    }
 
 }
