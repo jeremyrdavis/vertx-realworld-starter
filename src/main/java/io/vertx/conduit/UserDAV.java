@@ -32,7 +32,7 @@ public class UserDAV extends AbstractVerticle {
 
     public static final String MESSAGE_FOLLOW_USER_FOLLOWED_USER = "followed";
     public static final String MESSAGE_FOLLOW_USER_FOLLOWER = "follower";
-    public static final String MESSAGE_RESPONSE_FAILURE = "failure";
+//    public static final String MESSAGE_RESPONSE_FAILURE = "failure";
     public static final String MESSAGE_VALUE_USER = "user";
     public static final String MESSAGE_LOOKUP_CRITERIA = "criteria";
     public static final String MESSAGE_UPDATE_EXISTING = "existing";
@@ -168,10 +168,7 @@ public class UserDAV extends AbstractVerticle {
             });
         } catch (Exception e) {
 
-            message.reply(
-                    new JsonObject()
-                            .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
-                            .put(MESSAGE_RESPONSE_DETAILS, e.getMessage()));
+            message.fail(DAVErrorCodes.UNKNOWN_ERROR.ordinal(), DAVErrorCodes.UNKNOWN_ERROR.message);
         }
 
 
@@ -293,9 +290,7 @@ public class UserDAV extends AbstractVerticle {
                 message.reply(new JsonObject()
                         .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
             } else {
-                message.reply(new JsonObject()
-                        .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
-                        .put(MESSAGE_RESPONSE_DETAILS, res.cause().getMessage()));
+                message.fail(DAVErrorCodes.NOT_FOUND.ordinal(), DAVErrorCodes.NOT_FOUND.message + res.cause());
             }
         });
     }
@@ -311,9 +306,7 @@ public class UserDAV extends AbstractVerticle {
                 message.reply(new JsonObject()
                         .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
             } else {
-                message.reply(new JsonObject()
-                        .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
-                        .put(MESSAGE_RESPONSE_DETAILS, res.cause().getMessage()));
+                message.fail(DAVErrorCodes.NOT_FOUND.ordinal(), DAVErrorCodes.NOT_FOUND.message + res.cause());
             }
         });
     }
@@ -372,9 +365,7 @@ public class UserDAV extends AbstractVerticle {
                 message.reply(new JsonObject()
                         .put(MESSAGE_RESPONSE_DETAILS, userToRegister.toJson()));
             } else {
-                message.reply(new JsonObject()
-                        .put(MESSAGE_RESPONSE, MESSAGE_RESPONSE_FAILURE)
-                        .put(MESSAGE_RESPONSE_DETAILS, ar.cause()));
+                message.fail(DAVErrorCodes.DB_INSERT_FAILURE.ordinal(), DAVErrorCodes.DB_INSERT_FAILURE + ar.cause().getMessage());
             }
         });
 
