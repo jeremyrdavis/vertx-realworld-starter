@@ -38,7 +38,7 @@ public class GetCurrentUserTest extends BaseDatabaseVerticleTest{
           testContext.assertNotNull(returnedJson);
           JsonObject returnedUser = returnedJson.getJsonObject("user");
           testContext.assertEquals("Jacob", returnedUser.getString("username"));
-          testContext.assertEquals("jake@jake.jake", returnedUser.getString("email"), "Email should be 'user2@user2.user2");
+          testContext.assertEquals("jake@jake.jake", returnedUser.getString("email"), "Email should be 'jake@jake.jake");
           testContext.assertEquals("I work at state farm", returnedUser.getString("bio"), "Bio should be I work at state farm");
           testContext.assertNull(returnedUser.getString("image"), "image should be null/empty");
           getAsync.complete();
