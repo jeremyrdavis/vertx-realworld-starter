@@ -8,12 +8,17 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.auth.mongo.impl.DefaultHashStrategy;
 import io.vertx.ext.auth.mongo.impl.MongoUser;
 import io.vertx.ext.mongo.MongoClient;
 
 public class UserDAV extends AbstractVerticle {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserDAV.class);
+
 
     public static final String MESSAGE_ADDRESS = "address.login";
 
@@ -45,7 +50,8 @@ public class UserDAV extends AbstractVerticle {
     @Override
     public void start(Future<Void> startFuture) {
 
-        System.out.println(config().getString("db_name"));
+        LOGGER.info("HttpVerticle starting with config for " + config().getString("env"));
+
         // Configure the MongoClient inline.  This should be externalized into a config file
         mongoClient = MongoClient.createShared(vertx, new JsonObject().put("db_name", config().getString("db_name", "conduit")).put("connection_string", config().getString("connection_string", "mongodb://localhost:27017")));
 
@@ -63,7 +69,7 @@ public class UserDAV extends AbstractVerticle {
         consumer.handler(message -> {
 
             String action = message.body().getString(MESSAGE_ACTION);
-            System.out.println(action);
+            LOGGER.info(action);
 
             switch (action) {
                 case MESSAGE_ACTION_REGISTER:
@@ -237,7 +243,7 @@ public class UserDAV extends AbstractVerticle {
     }
 
     private Future<User> findUserByEmail(String email) {
-        System.out.println("findUserByEmail: " + email);
+        LOGGER.debug("findUserByEmail: " + email);
         Future<User> retVal = Future.future();
 
         JsonObject query = new JsonObject().put("email", email);
@@ -261,7 +267,7 @@ public class UserDAV extends AbstractVerticle {
         mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, ar -> {
 
             if (ar.succeeded()) {
-                System.out.println(ar.result().get(0));
+                LOGGER.debug(ar.result().get(0));
                 User userToFollow = new User(ar.result().get(0));
                 retVal.complete(userToFollow);
             } else {
@@ -277,7 +283,7 @@ public class UserDAV extends AbstractVerticle {
 
         mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, res -> {
             if (res.succeeded()) {
-                System.out.println("lookupUserByUsername for username " + message.body().getString(MESSAGE_LOOKUP_CRITERIA) + " result: " + res.result());
+                LOGGER.debug("lookupUserByUsername for username " + message.body().getString(MESSAGE_LOOKUP_CRITERIA) + " result: " + res.result());
                 message.reply(new JsonObject()
                         .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
             } else {
@@ -293,7 +299,7 @@ public class UserDAV extends AbstractVerticle {
 
         mongoClient.find(MongoConstants.COLLECTION_NAME_USERS, query, res -> {
             if (res.succeeded()) {
-                System.out.println("lookupUserByEmail for email " + message.body().getString(MESSAGE_LOOKUP_CRITERIA) + " result: " + res.result());
+                LOGGER.debug("lookupUserByEmail for email " + message.body().getString(MESSAGE_LOOKUP_CRITERIA) + " result: " + res.result());
                 message.reply(new JsonObject()
                         .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
             } else {
@@ -323,14 +329,14 @@ public class UserDAV extends AbstractVerticle {
         //
         JsonObject authInfo = message.body().getJsonObject(MESSAGE_VALUE_USER);
 
-        System.out.println(authInfo.toString());
+        LOGGER.debug(authInfo.toString());
 
         loginAuthProvider.authenticate(authInfo, ar -> {
             if (ar.succeeded()) {
 
                 lookupUserByCriteria("email", authInfo.getString("email")).setHandler(ar2 -> {
                     if (ar2.succeeded()) {
-                        System.out.println(ar2.result());
+                        LOGGER.debug(ar2.result());
                         message.reply(new JsonObject()
                                 .put(MESSAGE_RESPONSE_DETAILS, ar2.result().toJson()));
                     } else {
@@ -377,7 +383,7 @@ public class UserDAV extends AbstractVerticle {
         mongoClient.save(MongoConstants.COLLECTION_NAME_USERS, user.toMongoJson(), ar -> {
             if (ar.succeeded()) {
                 user.set_id(ar.result());
-                System.out.println("insert successful:" + user.toMongoJson());
+                LOGGER.debug("insert successful:" + user.toMongoJson());
                 retVal.complete();
             } else {
                 retVal.fail(ar.cause());

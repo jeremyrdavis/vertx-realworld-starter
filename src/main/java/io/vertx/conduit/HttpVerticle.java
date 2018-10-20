@@ -11,6 +11,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTOptions;
 import io.vertx.ext.web.Router;
@@ -22,12 +24,16 @@ import static io.vertx.conduit.UserDAV.*;
 
 public class HttpVerticle extends AbstractVerticle {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(HttpVerticle.class);
+
   // Authentication provider for the api
   private JWTAuth jwtAuth;
 
 
   @Override
   public void start(Future<Void> startFuture) {
+
+    LOGGER.info("HttpVerticle starting with config for " + config().getString("env"));
 
     // Configure authentication with JWT
     jwtAuth = JWTAuth.create(vertx, new JsonObject().put("keyStore", new JsonObject()
