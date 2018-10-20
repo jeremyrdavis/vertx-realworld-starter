@@ -27,12 +27,10 @@ public class UserDAV extends AbstractVerticle {
     public static final String MESSAGE_ACTION_UNFOLLOW = "action.unfollow";
     public static final String MESSAGE_ACTION_UPDATE = "action.update";
 
-    public static final String MESSAGE_RESPONSE = "response";
     public static final String MESSAGE_RESPONSE_DETAILS = "details";
 
     public static final String MESSAGE_FOLLOW_USER_FOLLOWED_USER = "followed";
     public static final String MESSAGE_FOLLOW_USER_FOLLOWER = "follower";
-//    public static final String MESSAGE_RESPONSE_FAILURE = "failure";
     public static final String MESSAGE_VALUE_USER = "user";
     public static final String MESSAGE_LOOKUP_CRITERIA = "criteria";
     public static final String MESSAGE_UPDATE_EXISTING = "existing";
