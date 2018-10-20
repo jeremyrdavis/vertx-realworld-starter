@@ -22,7 +22,9 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.JWTAuthHandler;
 
+import static io.vertx.conduit.MessagingProps.*;
 import static io.vertx.conduit.UserDAV.*;
+import static io.vertx.conduit.users.ArticleDAV.MESSAGE_ARTICLES;
 
 public class HttpVerticle extends AbstractVerticle {
 
@@ -140,10 +142,11 @@ public class HttpVerticle extends AbstractVerticle {
         LOGGER.info(slug);
 
         JsonObject message = new JsonObject()
-                .put(MESSAGE_ACTION, MESSAGE_ACTION_LOOKUP_ARTICLE_BY_SLUG)
-                .put(MESSAGE_LOOKUP_CRITERIA, slug);
+                .put(MESSAGE_ACTION, LOOKUP_BY_FIELD)
+                .put(MESSAGE_LOOKUP_FIELD, "slug")
+                .put(MESSAGE_LOOKUP_VALUE, slug);
 
-        vertx.eventBus().send(MESSAGE_ADDRESS, message, ar ->{
+        vertx.eventBus().send(MESSAGE_ARTICLES, message, ar ->{
             if (ar.succeeded()) {
                 routingContext.response()
                         .setStatusCode(200)

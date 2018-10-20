@@ -19,21 +19,21 @@ import io.vertx.ext.mongo.MongoClient;
 
 import java.util.Date;
 
+import static io.vertx.conduit.MessagingProps.MESSAGE_ACTION;
+import static io.vertx.conduit.MessagingProps.MESSAGE_RESPONSE_DETAILS;
+
 public class UserDAV extends AbstractVerticle {
 
     public static final String MESSAGE_ADDRESS = "address.login";
     // actions
-    public static final String MESSAGE_ACTION = "action";
     public static final String MESSAGE_ACTION_FOLLOW_USER = "action.follow";
     public static final String MESSAGE_ACTION_LOGIN = "action.login";
-    public static final String MESSAGE_ACTION_LOOKUP_ARTICLE_BY_SLUG = "action.lookup.article.by.slug";
     public static final String MESSAGE_ACTION_LOOKUP_USER_BY_EMAIL = "persistence.lookup.user.by.email";
     public static final String MESSAGE_ACTION_LOOKUP_USER_BY_USERNAME = "persistence.lookup.user.by.username";
     public static final String MESSAGE_ACTION_REGISTER = "action.register";
     public static final String MESSAGE_ACTION_CREATE_ARTICLE = "action.create.article";
     public static final String MESSAGE_ACTION_UNFOLLOW = "action.unfollow";
     public static final String MESSAGE_ACTION_UPDATE = "action.update";
-    public static final String MESSAGE_RESPONSE_DETAILS = "details";
     public static final String MESSAGE_CREATE_OBJECT = "object";
     public static final String MESSAGE_FOLLOW_USER_FOLLOWED_USER = "followed";
     public static final String MESSAGE_FOLLOW_USER_FOLLOWER = "follower";
@@ -75,9 +75,6 @@ public class UserDAV extends AbstractVerticle {
             LOGGER.info(action);
 
             switch (action) {
-                case MESSAGE_ACTION_LOOKUP_ARTICLE_BY_SLUG:
-                    lookupArticleBySlug(message);
-                    break;
                 case MESSAGE_ACTION_CREATE_ARTICLE:
                     createArticle(message);
                     break;
@@ -108,20 +105,6 @@ public class UserDAV extends AbstractVerticle {
         });
 
         startFuture.complete();
-    }
-
-    private void lookupArticleBySlug(Message<JsonObject> message) {
-        JsonObject query = new JsonObject().put("slug", message.body().getString(MESSAGE_LOOKUP_CRITERIA));
-        lookupByCriteria(message, query);
-        mongoClient.find(MongoConstants.COLLECTION_NAME_ARTICLES, query, res -> {
-            if (res.succeeded()) {
-                LOGGER.info("lookup succeeded: " + res.result());
-                message.reply(new JsonObject()
-                        .put(MESSAGE_RESPONSE_DETAILS, res.result().get(0)));
-            } else {
-                message.fail(MessagingErrorCodes.NOT_FOUND.ordinal(), MessagingErrorCodes.NOT_FOUND.message + res.cause());
-            }
-        });
     }
 
     private void lookupByCriteria(Message<JsonObject> message, JsonObject query) {

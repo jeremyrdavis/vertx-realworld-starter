@@ -1,5 +1,6 @@
 package io.vertx.conduit;
 
+import io.vertx.conduit.users.ArticleDAV;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
@@ -43,6 +44,7 @@ public class BaseConduitVerticleTest {
     vertx.deployVerticle(DBSetupVerticle.class.getName(), tc.asyncAssertSuccess());
     vertx.deployVerticle(HttpVerticle.class.getName(), options, tc.asyncAssertSuccess());
     vertx.deployVerticle(UserDAV.class.getName(), options, tc.asyncAssertSuccess());
+    vertx.deployVerticle(ArticleDAV.class.getName(), options, tc.asyncAssertSuccess());
   }
 
   @Test
