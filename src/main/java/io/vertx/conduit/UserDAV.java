@@ -123,7 +123,7 @@ public class UserDAV extends AbstractVerticle {
                         message.fail(MessagingErrorCodes.LOOKUP_FAILED.ordinal(), MessagingErrorCodes.LOOKUP_FAILED.message);
                     }
                 });
-            }else {
+            } else {
                 message.fail(MessagingErrorCodes.LOOKUP_FAILED.ordinal(), MessagingErrorCodes.LOOKUP_FAILED.message);
             }
         });
@@ -155,17 +155,14 @@ public class UserDAV extends AbstractVerticle {
                                                         .put(MESSAGE_FOLLOW_USER_FOLLOWED_USER, followed.toMongoJson())));
                             }
                         });
-                    }else {
+                    } else {
                         message.fail(MessagingErrorCodes.LOOKUP_FAILED.ordinal(), MessagingErrorCodes.LOOKUP_FAILED.message);
                     }
                 });
-            }else {
+            } else {
                 message.fail(MessagingErrorCodes.LOOKUP_FAILED.ordinal(), MessagingErrorCodes.LOOKUP_FAILED.message);
             }
         });
-
-//            message.fail(MessagingErrorCodes.UNKNOWN_ERROR.ordinal(), MessagingErrorCodes.UNKNOWN_ERROR.message);
-
 
     }
 
