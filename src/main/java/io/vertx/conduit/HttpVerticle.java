@@ -18,9 +18,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.JWTAuthHandler;
 
-import java.lang.reflect.Member;
-
-import static io.vertx.conduit.MongoVerticle.*;
+import static io.vertx.conduit.UserDAV.*;
 
 public class HttpVerticle extends AbstractVerticle {
 

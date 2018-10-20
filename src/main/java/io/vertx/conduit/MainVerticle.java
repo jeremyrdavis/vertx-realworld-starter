@@ -18,7 +18,7 @@ public class MainVerticle extends AbstractVerticle {
         DeploymentOptions deploymentOptions = new DeploymentOptions().setConfig(config());
         CompositeFuture.all(
                 deployVerticle(HttpVerticle.class, deploymentOptions),
-                deployVerticle(MongoVerticle.class, deploymentOptions)).setHandler(ar ->{
+                deployVerticle(UserDAV.class, deploymentOptions)).setHandler(ar ->{
             if (ar.succeeded()) {
                 LOGGER.info("all deployments succeeded");
                 startFuture.complete();

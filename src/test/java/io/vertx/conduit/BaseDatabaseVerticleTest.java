@@ -1,8 +1,5 @@
 package io.vertx.conduit;
 
-import io.vertx.conduit.DBSetupVerticle;
-import io.vertx.conduit.HttpVerticle;
-import io.vertx.conduit.MongoVerticle;
 import io.vertx.conduit.users.models.User;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
@@ -44,7 +41,7 @@ public abstract class BaseDatabaseVerticleTest {
     jacob = new User("jake@jake.jake", "jakejake", "Jacob", "I work at state farm", null);
     vertx.deployVerticle(DBSetupVerticle.class.getName(), tc.asyncAssertSuccess());
     vertx.deployVerticle(HttpVerticle.class.getName(), options, tc.asyncAssertSuccess());
-    vertx.deployVerticle(MongoVerticle.class.getName(), options, tc.asyncAssertSuccess());
+    vertx.deployVerticle(UserDAV.class.getName(), options, tc.asyncAssertSuccess());
   }
 
   @After

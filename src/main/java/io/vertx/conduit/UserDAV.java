@@ -14,7 +14,7 @@ import io.vertx.ext.auth.mongo.impl.DefaultHashStrategy;
 import io.vertx.ext.auth.mongo.impl.MongoUser;
 import io.vertx.ext.mongo.MongoClient;
 
-public class MongoVerticle extends AbstractVerticle {
+public class UserDAV extends AbstractVerticle {
 
     public static final String MESSAGE_ADDRESS = "address.login";
     public static final String MESSAGE_ACTION = "persistence.action";

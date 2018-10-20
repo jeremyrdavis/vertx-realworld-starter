@@ -13,7 +13,7 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.conduit.DBSetupVerticle;
 import io.vertx.conduit.HttpVerticle;
 import io.vertx.conduit.MainVerticle;
-import io.vertx.conduit.MongoVerticle;
+import io.vertx.conduit.UserDAV;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
