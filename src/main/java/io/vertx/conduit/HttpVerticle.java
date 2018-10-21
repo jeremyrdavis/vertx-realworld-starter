@@ -21,6 +21,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.JWTAuthHandler;
+import io.vertx.groovy.ext.auth.jwt.JWTAuth_GroovyExtension;
 
 import static io.vertx.conduit.MessagingProps.*;
 import static io.vertx.conduit.UserDAV.*;
@@ -68,6 +69,7 @@ public class HttpVerticle extends AbstractVerticle {
         apiRouter.get("/articles").handler(this::getArticles);
         apiRouter.post("/articles").handler(this::createArticle);
         apiRouter.get("/articles/:slug").handler(this::lookupArticle);
+        apiRouter.put("/articles/:slug").handler(JWTAuthHandler.create(jwtAuth)).handler(this::updateArticle);
         apiRouter.delete("/articles/:slug").handler(JWTAuthHandler.create(jwtAuth)).handler(this::deleteArticle);
         apiRouter.put("/articles/:slug").handler(this::updateArticle);
 
@@ -88,6 +90,9 @@ public class HttpVerticle extends AbstractVerticle {
 
     }
 
+    private void getArticles(RoutingContext routingContext) {
+    }
+
     private void lookupArticle(RoutingContext routingContext) {
 
         String slug = routingContext.request().getParam("slug");
@@ -97,8 +102,8 @@ public class HttpVerticle extends AbstractVerticle {
 
         JsonObject message = new JsonObject()
                 .put(MESSAGE_ACTION, LOOKUP_BY_FIELD)
-                .put(MESSAGE_LOOKUP_FIELD, "slug")
-                .put(MESSAGE_LOOKUP_VALUE, slug);
+                .put(KEY_FIELD, "slug")
+                .put(KEY_VALUE, slug);
 
         vertx.eventBus().send(MESSAGE_ARTICLES, message, ar -> {
 
@@ -121,24 +126,58 @@ public class HttpVerticle extends AbstractVerticle {
         });
     }
 
-    private void getArticles(RoutingContext routingContext) {
+    private Future<User> lookupUserFromJWT(String token) {
+        Future<User> retVal = Future.future();
+
+        extractUserFromJWTToken(token).setHandler(ar -> {
+            if (ar.succeeded()) {
+                // get the logged in user
+                JsonObject jwtUser = ar.result();
+                // get the logged in user from the database
+                getUserFromEmail(jwtUser.getString("email")).setHandler(ar2 -> {
+                    if (ar2.succeeded()) {
+                        final User user = new User(ar2.result());
+                        retVal.complete(user);
+                    }else {
+                        retVal.fail(ar2.cause());
+                    }
+                });
+            }else{
+                retVal.fail(ar.cause());
+            }
+        });
+        return retVal;
     }
 
     private void createArticle(RoutingContext routingContext) {
         JsonObject b = routingContext.getBodyAsJson().getJsonObject("article");
+        Article articleToSave = new Article(b);
 
-        final Article articleToSave = new Article(b);
+        // get the Author/User from the JWT token
+        String headerAuth = routingContext.request().getHeader("Authorization");
+        String[] values = headerAuth.split(" ");
 
-        save(articleToSave, ConduitModelType.ARTICLE).setHandler(ar -> {
+        lookupUserFromJWT(values[1]).setHandler(ar ->{
             if (ar.succeeded()) {
-                LOGGER.info("Save successful. Returning: " + ar.result().toString());
-                final Article returnedArticle = new Article(ar.result());
-                routingContext.response()
-                        .setStatusCode(200)
-                        .putHeader("Content-Type", "application/json; charset=utf-8")
-                        .end(Json.encodePrettily(returnedArticle.toConduitJson()));
-            } else {
-                LOGGER.info("Save unsuccessful. Returning: " + ar.cause().getMessage());
+                User user = ar.result();
+                articleToSave.setAuthor(user);
+                save(articleToSave, ConduitModelType.ARTICLE).setHandler(ar2 -> {
+                    if (ar2.succeeded()) {
+                        LOGGER.info("Save successful. Returning: " + ar2.result().toString());
+                        final Article returnedArticle = new Article(ar2.result());
+                        routingContext.response()
+                                .setStatusCode(200)
+                                .putHeader("Content-Type", "application/json; charset=utf-8")
+                                .end(Json.encodePrettily(returnedArticle.toConduitJson()));
+                    } else {
+                        LOGGER.info("Save unsuccessful. Returning: " + ar2.cause().getMessage());
+                        routingContext.response().setStatusCode(422)
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end(Json.encodePrettily(new ConduitError(ar.cause().getMessage())));
+                    }
+                });
+            }else{
+                LOGGER.info("User lookup unsuccessful. Returning: " + ar.cause().getMessage());
                 routingContext.response().setStatusCode(422)
                         .putHeader("content-type", "application/json; charset=utf-8")
                         .end(Json.encodePrettily(new ConduitError(ar.cause().getMessage())));
@@ -146,12 +185,40 @@ public class HttpVerticle extends AbstractVerticle {
         });
     }
 
+    private Future<Article> updateArticle(Article articleToUpdate) {
+        Future<Article> retVal = Future.future();
+
+        JsonObject update = new JsonObject()
+                .put("title", articleToUpdate.getTitle())
+                .put("description", articleToUpdate.getDescription())
+                .put("body", articleToUpdate.getBody());
+
+        JsonObject message = new JsonObject()
+                .put(MESSAGE_ACTION, MESSAGE_ACTION_UPDATE)
+                .put(KEY_FIELD, "slug")
+                .put(KEY_VALUE, articleToUpdate.getSlug())
+                .put(DOCUMENT, update);
+
+        vertx.eventBus().send(MESSAGE_ARTICLES, message, ar -> {
+
+            if (ar.succeeded()) {
+                JsonObject returned = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
+                LOGGER.info("Returned: " + returned);
+                final Article returnedArticle = new Article(returned);
+                retVal.complete(returnedArticle);
+            } else {
+                retVal.fail(ar.cause());
+            }
+        });
+        return retVal;
+    }
+
     private Future<JsonObject> save(ConduitDomainModel objectToSave, ConduitModelType modelType) {
 
         Future<JsonObject> retVal = Future.future();
 
         JsonObject message = new JsonObject()
-                .put(MESSAGE_CREATE_OBJECT, objectToSave.toJson())
+                .put(MESSAGE_CREATE_OBJECT, objectToSave.toMongoJson())
                 .put(MESSAGE_OBJECT_TYPE, modelType.name);
         if (modelType.equals(ConduitModelType.ARTICLE)) {
             message.put(MESSAGE_ACTION, MESSAGE_ACTION_CREATE_ARTICLE);
@@ -198,6 +265,42 @@ public class HttpVerticle extends AbstractVerticle {
     }
 
     private void updateArticle(RoutingContext routingContext) {
+        final String slug = routingContext.request().getParam("slug");
+
+        // get the new values
+        final JsonObject newArticleValuesJson = routingContext.getBodyAsJson().getJsonObject("article");
+        Article articleToSave = new Article(newArticleValuesJson);
+        articleToSave.setSlug(slug);
+
+        // get the Author/User from the JWT token
+        String[] values = routingContext.request().getHeader("Authorization").split(" ");
+
+        lookupUserFromJWT(values[1]).setHandler(ar ->{
+            if (ar.succeeded()) {
+                User user = ar.result();
+                articleToSave.setAuthor(user);
+                updateArticle(articleToSave).setHandler(ar2 ->{
+                    if (ar2.succeeded()) {
+                        LOGGER.info("Save successful. Returning: " + ar2.result().toString());
+                        routingContext.response()
+                                .setStatusCode(200)
+                                .putHeader("Content-Type", "application/json; charset=utf-8")
+                                .end(Json.encodePrettily(ar2.result().toConduitJson()));
+
+                    }else{
+                        routingContext.response().setStatusCode(422)
+                                .putHeader("content-type", "application/json; charset=utf-8")
+                                .end(Json.encodePrettily(new ConduitError(newArticleValuesJson.getString("title"))));
+                    }
+                });
+            }else{
+                routingContext.response().setStatusCode(422)
+                        .putHeader("content-type", "application/json; charset=utf-8")
+                        .end(Json.encodePrettily(new ConduitError(newArticleValuesJson.getString("title"))));
+            }
+        });
+
+
 
     }
 

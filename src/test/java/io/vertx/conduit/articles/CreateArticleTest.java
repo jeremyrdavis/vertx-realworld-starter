@@ -19,6 +19,7 @@ public class CreateArticleTest extends BaseConduitVerticleTest {
         webClient.post(8080, "localhost", "/api/articles")
                 .putHeader(HttpProps.CONTENT_TYPE, HttpProps.JSON)
                 .putHeader(HttpProps.XREQUESTEDWITH, HttpProps.XMLHTTPREQUEST)
+                .putHeader(HttpProps.AUTHORIZATION, TestProps.TOKEN_USER1)
                 .sendJsonObject(new JsonObject()
                         .put("article", new JsonObject()
                                 .put("title", "How to train your dragon")

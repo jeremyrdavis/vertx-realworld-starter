@@ -126,11 +126,18 @@ public class Article implements ConduitDomainModel{
                 .put("description", this.description)
                 .put("body", this.body)
                 .put("tagList", this.tagsList)
-                .put("createdAt", this.createdAt.getTime())
-                .put("updatedAt", this.updatedAt.getTime())
                 .put("favorited", this.favorited)
                 .put("favoritesCount", this.favoritesCount);
-
+        if (this.createdAt != null) {
+            article.put("createdAt", this.createdAt.getTime());
+        }else{
+            article.put("createdAt", this.createdAt);
+        }
+        if (this.updatedAt != null) {
+            article.put("updatedAt", this.updatedAt.getTime());
+        }else{
+            article.put("updatedAt", this.updatedAt);
+        }
         if (this.author != null) {
             article.put("author", this.author.toJson());
         }
@@ -140,6 +147,33 @@ public class Article implements ConduitDomainModel{
         return retVal;
     }
 
+    @Override
+    public JsonObject toMongoJson() {
+        JsonObject article = new JsonObject()
+                .put("id", this.id)
+                .put("slug", this.slug)
+                .put("title", this.title)
+                .put("description", this.description)
+                .put("body", this.body)
+                .put("tagList", this.tagsList);
+        if (this.createdAt != null) {
+            article.put("createdAt", this.createdAt.getTime());
+        }else{
+            article.put("createdAt", this.createdAt);
+        }
+        if (this.updatedAt != null) {
+            article.put("updatedAt", this.updatedAt.getTime());
+        }else{
+            article.put("updatedAt", this.updatedAt);
+        }
+        article.put("favorited", this.favorited)
+               .put("favoritesCount", this.favoritesCount);
+
+        if (this.author != null) {
+            article.put("author", this.author.get_id());
+        }
+        return article;
+    }
 
     public String getId() {
         return id;

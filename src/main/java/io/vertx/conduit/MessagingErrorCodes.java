@@ -7,6 +7,7 @@ public enum MessagingErrorCodes {
     LOOKUP_FAILED("Lookup Failed: "),
     NOT_FOUND("Not found: "),
     INVALID_ARGUMENT("Invalid Argument: "),
+    UPDATE_FAILURE("Update Failure: "),
     UNKNOWN_ERROR("Undetermined Error: ");
 
     private MessagingErrorCodes(String msg){

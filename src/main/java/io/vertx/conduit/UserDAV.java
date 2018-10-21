@@ -20,6 +20,7 @@ import io.vertx.ext.mongo.MongoClient;
 import java.util.Date;
 
 import static io.vertx.conduit.MessagingProps.MESSAGE_ACTION;
+import static io.vertx.conduit.MessagingProps.MESSAGE_ACTION_UPDATE;
 import static io.vertx.conduit.MessagingProps.MESSAGE_RESPONSE_DETAILS;
 
 public class UserDAV extends AbstractVerticle {
@@ -33,7 +34,6 @@ public class UserDAV extends AbstractVerticle {
     public static final String MESSAGE_ACTION_REGISTER = "action.register";
     public static final String MESSAGE_ACTION_CREATE_ARTICLE = "action.create.article";
     public static final String MESSAGE_ACTION_UNFOLLOW = "action.unfollow";
-    public static final String MESSAGE_ACTION_UPDATE = "action.update";
     public static final String MESSAGE_CREATE_OBJECT = "object";
     public static final String MESSAGE_FOLLOW_USER_FOLLOWED_USER = "followed";
     public static final String MESSAGE_FOLLOW_USER_FOLLOWER = "follower";

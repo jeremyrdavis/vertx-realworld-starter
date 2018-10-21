@@ -7,4 +7,6 @@ public interface ConduitDomainModel {
     public JsonObject toJson();
 
     public JsonObject toConduitJson();
+
+    public JsonObject toMongoJson();
 }

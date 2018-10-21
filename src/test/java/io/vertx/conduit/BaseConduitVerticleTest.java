@@ -63,7 +63,6 @@ public class BaseConduitVerticleTest {
   public void tearDown(TestContext tc) {
     vertx.setTimer(1000, t -> { System.out.println("timer complete"); });
     vertx.close(tc.asyncAssertSuccess());
-
   }
 
 

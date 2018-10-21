@@ -1,6 +1,7 @@
 package io.vertx.conduit.users;
 
 import io.vertx.conduit.MessagingErrorCodes;
+import io.vertx.conduit.users.models.MongoConstants;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.eventbus.EventBus;
@@ -45,12 +46,31 @@ public class ArticleDAV extends AbstractVerticle {
                 case DELETE:
                     delete(message);
                     break;
+                case MESSAGE_ACTION_UPDATE:
+                    update(message);
+                    break;
                 default:
                     message.fail(1, "Unkown action: " + message.body());
             }
         });
 
         startFuture.complete();
+
+    }
+
+    private void update(Message<JsonObject> message) {
+        JsonObject updateValues = message.body().getJsonObject(DOCUMENT);
+        JsonObject query = new JsonObject();
+        query.put(message.body().getString(KEY_FIELD), message.body().getString(KEY_VALUE));
+        JsonObject update = new JsonObject()
+                .put("$set", updateValues);
+        mongoClient.updateCollection(MongoConstants.COLLECTION_NAME_ARTICLES, query, update, res ->{
+            if (res.succeeded()) {
+                lookupByField(message);
+            }else{
+                message.fail(MessagingErrorCodes.UPDATE_FAILURE.ordinal(), MessagingErrorCodes.UPDATE_FAILURE.message + res.cause().getMessage());
+            }
+        });
 
     }
 
@@ -70,7 +90,7 @@ public class ArticleDAV extends AbstractVerticle {
 
     private void lookupByField(Message<JsonObject> message) {
 
-        JsonObject query = new JsonObject().put(message.body().getString(MESSAGE_LOOKUP_FIELD), message.body().getString(MESSAGE_LOOKUP_VALUE));
+        JsonObject query = new JsonObject().put(message.body().getString(KEY_FIELD), message.body().getString(KEY_VALUE));
         mongoClient.find(DEFAULT_COLLECTION, query, res -> {
             if (res.succeeded()) {
                 LOGGER.info("lookup succeeded: " + res.result());
