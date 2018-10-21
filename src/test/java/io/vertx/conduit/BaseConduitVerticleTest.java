@@ -13,6 +13,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
+
 import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
 
@@ -26,6 +28,8 @@ public class BaseConduitVerticleTest {
   protected User jacob;
 
   protected User user1;
+
+  protected Article testArticle1;
 
   @Before
   public void setUp(TestContext tc) {
@@ -41,6 +45,8 @@ public class BaseConduitVerticleTest {
       );
 
     jacob = new User("jake@jake.jake", "jakejake", "Jacob", "I work at state farm", null);
+    testArticle1 = new Article("Test Article 1", "Test description 1", "Lorem ipsum dolor site amet.", new ArrayList<String>(3){ { add("test1"); add("test2"); add("test3"); } });
+
     vertx.deployVerticle(DBSetupVerticle.class.getName(), tc.asyncAssertSuccess());
     vertx.deployVerticle(HttpVerticle.class.getName(), options, tc.asyncAssertSuccess());
     vertx.deployVerticle(UserDAV.class.getName(), options, tc.asyncAssertSuccess());

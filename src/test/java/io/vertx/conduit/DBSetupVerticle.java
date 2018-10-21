@@ -12,6 +12,7 @@ import io.vertx.ext.auth.mongo.MongoAuth;
 import io.vertx.ext.mongo.MongoClient;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 import static io.vertx.conduit.TestProps.DB_CONNECTION_STRING_TEST;
 import static io.vertx.conduit.TestProps.DB_NAME_TEST;
@@ -39,7 +40,10 @@ public class DBSetupVerticle extends AbstractVerticle {
         loginAuthProvider.setUsernameCredentialField("email");
         loginAuthProvider.setUsernameField("email");
 
+        Date time = new Date();
         Article article = new Article("Test Article 1", "Test description 1", "Lorem ipsum dolor site amet.", new ArrayList<String>(3){ { add("test1"); add("test2"); add("test3"); } });
+        article.setCreatedAt(time);
+        article.setUpdatedAt(time);
         article.setSlug("test-article-1");
         Future<Void> init = dropCollection(MongoConstants.COLLECTION_NAME_USERS)
                 .compose(v -> dropCollection(MongoConstants.COLLECTION_NAME_ARTICLES))

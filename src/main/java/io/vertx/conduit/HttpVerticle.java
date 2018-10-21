@@ -67,6 +67,7 @@ public class HttpVerticle extends AbstractVerticle {
         apiRouter.route("/article*").handler(BodyHandler.create());
         apiRouter.get("/articles").handler(this::getArticles);
         apiRouter.post("/articles").handler(this::createArticle);
+        apiRouter.get("/articles/:slug").handler(this::lookupArticle);
         apiRouter.delete("/articles/:slug").handler(JWTAuthHandler.create(jwtAuth)).handler(this::deleteArticle);
         apiRouter.put("/articles/:slug").handler(this::updateArticle);
 
@@ -85,6 +86,39 @@ public class HttpVerticle extends AbstractVerticle {
                     }
                 });
 
+    }
+
+    private void lookupArticle(RoutingContext routingContext) {
+
+        String slug = routingContext.request().getParam("slug");
+        if (slug == null || slug.isEmpty()) {
+            routingContext.response().setStatusCode(400).end();
+        }
+
+        JsonObject message = new JsonObject()
+                .put(MESSAGE_ACTION, LOOKUP_BY_FIELD)
+                .put(MESSAGE_LOOKUP_FIELD, "slug")
+                .put(MESSAGE_LOOKUP_VALUE, slug);
+
+        vertx.eventBus().send(MESSAGE_ARTICLES, message, ar -> {
+
+            if (ar.succeeded()) {
+                JsonObject returned = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
+                LOGGER.info("Returned: " + returned);
+
+                JsonObject returnedJson = ((JsonObject) ar.result().body()).getJsonObject(MESSAGE_RESPONSE_DETAILS);
+                final Article returnedArticle = new Article(returnedJson);
+                routingContext.response()
+                        .setStatusCode(200)
+                        .putHeader("Content-Type", "application/json; charset=utf-8")
+                        .end(Json.encodePrettily(returnedArticle.toConduitJson()));
+            } else {
+                LOGGER.info("Save unsuccessful. Returning: " + ar.cause().getMessage());
+                routingContext.response().setStatusCode(422)
+                        .putHeader("content-type", "application/json; charset=utf-8")
+                        .end(Json.encodePrettily(new ConduitError(ar.cause().getMessage())));
+            }
+        });
     }
 
     private void getArticles(RoutingContext routingContext) {
@@ -142,7 +176,7 @@ public class HttpVerticle extends AbstractVerticle {
         LOGGER.info(slug);
 
         JsonObject message = new JsonObject()
-                .put(MESSAGE_ACTION, LOOKUP_BY_FIELD)
+                .put(MESSAGE_ACTION, DELETE)
                 .put(MESSAGE_LOOKUP_FIELD, "slug")
                 .put(MESSAGE_LOOKUP_VALUE, slug);
 

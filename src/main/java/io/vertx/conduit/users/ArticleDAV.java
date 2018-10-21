@@ -1,7 +1,6 @@
 package io.vertx.conduit.users;
 
 import io.vertx.conduit.MessagingErrorCodes;
-import io.vertx.conduit.users.models.MongoConstants;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.eventbus.EventBus;
@@ -16,10 +15,9 @@ import static io.vertx.conduit.MessagingProps.*;
 
 public class ArticleDAV extends AbstractVerticle {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ArticleDAV.class);
-
     public static final String MESSAGE_ARTICLES = "address.articles";
     public static final String MESSAGE_ACTION_LOOKUP_ARTICLE_BY_SLUG = "action.lookup.article.by.slug";
+    private static final Logger LOGGER = LoggerFactory.getLogger(ArticleDAV.class);
     private static final String DEFAULT_COLLECTION = "article";
 
     // for DB access
@@ -44,6 +42,9 @@ public class ArticleDAV extends AbstractVerticle {
                 case LOOKUP_BY_FIELD:
                     lookupByField(message);
                     break;
+                case DELETE:
+                    delete(message);
+                    break;
                 default:
                     message.fail(1, "Unkown action: " + message.body());
             }
@@ -51,6 +52,20 @@ public class ArticleDAV extends AbstractVerticle {
 
         startFuture.complete();
 
+    }
+
+    private void delete(Message<JsonObject> message) {
+
+        JsonObject query = new JsonObject().put(message.body().getString(MESSAGE_LOOKUP_FIELD), message.body().getString(MESSAGE_LOOKUP_VALUE));
+        mongoClient.removeDocument(DEFAULT_COLLECTION, query, res -> {
+            if (res.succeeded()) {
+                LOGGER.info("delete succeeded: " + res.result());
+                message.reply(new JsonObject()
+                        .put(MESSAGE_RESPONSE_DETAILS, MESSAGE_SUCCESS));
+            } else {
+                message.fail(MessagingErrorCodes.NOT_FOUND.ordinal(), MessagingErrorCodes.NOT_FOUND.message + res.cause());
+            }
+        });
     }
 
     private void lookupByField(Message<JsonObject> message) {
